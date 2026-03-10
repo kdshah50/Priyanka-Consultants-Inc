@@ -775,8 +775,8 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;backg
       <div class="contact-info-block animate-on-scroll">
         <div class="contact-detail"><div class="contact-icon">&#128205;</div><div><h4>Headquarters</h4><p>10 Werner Ct, Monroe Township, NJ 08831</p></div></div>
         <div class="contact-detail"><div class="contact-icon">&#128222;</div><div><h4>Phone</h4><p><a href="tel:7329983418">732-998-3418</a></p><p><a href="tel:7326908527">732-690-8527</a></p></div></div>
-        <div class="contact-detail"><div class="contact-icon">&#9993;</div><div><h4>Email</h4><p><a href="mailto:jigna_99@yahoo.com">jigna_99@yahoo.com</a></p></div></div>
-        <div class="contact-detail"><div class="contact-icon">&#9993;</div><div><h4>Email</h4><p><a href="mailto:kdshah50@gmail.com">kdshah50@gmail.com</a></p></div></div>        <div class="contact-detail"><div class="contact-icon">&#128336;</div><div><h4>Availability</h4><p>Online &amp; On-site coaching available nationwide. Flexible scheduling including evenings and weekends.</p></div></div>
+        <div class="contact-detail"><div class="contact-icon">&#9993;</div><div><h4>Email</h4><p><a href="/cdn-cgi/l/email-protection#73191a141d123303121807000a0007161e001a1d105d101c1e"><span class="__cf_email__" data-cfemail="90faf9f7fef1d0e0f1fbe4e3e9e3e4f5fde3f9fef3bef3fffd">[email&#160;protected]</span></a></p></div></div>
+        <div class="contact-detail"><div class="contact-icon">&#128336;</div><div><h4>Availability</h4><p>Online &amp; On-site coaching available nationwide. Flexible scheduling including evenings and weekends.</p></div></div>
         <div style="padding:24px;background:var(--gold-dim);border-radius:var(--radius);border-left:3px solid var(--gold)">
           <p style="font-size:.95rem;line-height:1.7"><strong>Corporate Training:</strong> Group discounts available for 5+ attendees. We customize SAFe training programs and curricula for your organization's specific needs.</p>
         </div>
@@ -784,17 +784,20 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;backg
       <div class="contact-form animate-on-scroll">
         <h3 style="font-family:'DM Serif Display',serif;font-size:1.4rem;margin-bottom:24px">Request a Consultation</h3>
         <form id="contactForm" onsubmit="handleSubmit(event)">
+          <input type="hidden" name="access_key" value="YOUR_WEB3FORMS_ACCESS_KEY">
+          <input type="hidden" name="subject" value="New Consultation Request — Priyanka Consultants, Inc">
+          <input type="hidden" name="from_name" value="Priyanka Consultants Website">
           <div class="form-row">
-            <div class="form-group"><label>Full Name *</label><input type="text" placeholder="Your full name" required></div>
-            <div class="form-group"><label>Company</label><input type="text" placeholder="Your organization"></div>
+            <div class="form-group"><label>Full Name *</label><input type="text" name="name" placeholder="Your full name" required></div>
+            <div class="form-group"><label>Company</label><input type="text" name="company" placeholder="Your organization"></div>
           </div>
           <div class="form-row">
-            <div class="form-group"><label>Email *</label><input type="email" placeholder="email@company.com" required></div>
-            <div class="form-group"><label>Phone</label><input type="tel" placeholder="(XXX) XXX-XXXX"></div>
+            <div class="form-group"><label>Email *</label><input type="email" name="email" placeholder="email@company.com" required></div>
+            <div class="form-group"><label>Phone</label><input type="tel" name="phone" placeholder="(XXX) XXX-XXXX"></div>
           </div>
           <div class="form-group">
             <label>What are you interested in? *</label>
-            <select required>
+            <select name="service" required>
               <option value="">Select a service or training...</option>
               <optgroup label="Consulting Services">
                 <option>SAFe Implementation</option>
@@ -823,7 +826,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;backg
               </optgroup>
             </select>
           </div>
-          <div class="form-group"><label>Tell us about your goals</label><textarea placeholder="Describe your transformation goals, team size, timeline, or any questions you have..."></textarea></div>
+          <div class="form-group"><label>Tell us about your goals</label><textarea name="message" placeholder="Describe your transformation goals, team size, timeline, or any questions you have..."></textarea></div>
           <button type="submit" class="form-submit" id="submitBtn">Send Consultation Request &#10132;</button>
         </form>
         <p id="successMsg" style="display:none;margin-top:16px;padding:16px;background:rgba(46,204,113,.1);border-radius:8px;color:#2ecc71;font-weight:500;text-align:center">&#10003; Thank you! We'll be in touch within 24 hours.</p>
@@ -866,7 +869,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;backg
         <a href="#testimonials">Testimonials</a>
         <a href="#contact">Contact Us</a>
         <a href="tel:7329983418">732-998-3418</a>
-        <a href="mailto:jigna@paktsystemsinc.com">Email Us</a>
+        <a href="/cdn-cgi/l/email-protection#2b41424c454a6b5b4a405f5852585f4e465842454805484446">Email Us</a>
         <a href="https://scaledagile.com/certification/" target="_blank" rel="noopener">Official SAFe Site &#10132;</a>
       </div>
     </div>
@@ -884,7 +887,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;backg
 <!-- FLOATING CTA -->
 <a href="#contact" class="floating-cta">&#128172; Book Free Consultation</a>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 const hamburger=document.getElementById('hamburger'),navLinks=document.getElementById('navLinks');
 hamburger.addEventListener('click',()=>{hamburger.classList.toggle('active');navLinks.classList.toggle('active')});
 navLinks.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hamburger.classList.remove('active');navLinks.classList.remove('active')}));
@@ -894,16 +897,32 @@ const observer=new IntersectionObserver((entries)=>{
 },{threshold:.1});
 document.querySelectorAll('.animate-on-scroll').forEach(el=>observer.observe(el));
 
-function handleSubmit(e){
+async function handleSubmit(e){
   e.preventDefault();
   const btn=document.getElementById('submitBtn');
+  const form=document.getElementById('contactForm');
   btn.textContent='Sending...';btn.disabled=true;
-  setTimeout(()=>{document.getElementById('contactForm').style.display='none';document.getElementById('successMsg').style.display='block'},1200);
+  try{
+    const formData=new FormData(form);
+    const object=Object.fromEntries(formData);
+    object.email_to='kdshah50@gmail.com,Jigna_99@yahoo.com';
+    const res=await fetch('https://api.web3forms.com/submit',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(object)
+    });
+    const json=await res.json();
+    if(json.success){
+      form.reset();
+      document.getElementById('successMsg').style.display='block';
+      btn.textContent='Send Consultation Request ➜';btn.disabled=false;
+    }else{
+      throw new Error(json.message||'Submission failed');
+    }
+  }catch(err){
+    btn.textContent='Send Consultation Request ➜';btn.disabled=false;
+    alert('Sorry, there was an error sending your message. Please email us directly at kdshah50@gmail.com or call 732-998-3418.');
+  }
 }
-
-window.addEventListener('scroll',()=>{
-  document.querySelector('.navbar').style.background=window.scrollY>100?'rgba(10,22,40,.98)':'rgba(10,22,40,.95)';
-});
-</script>
-</body>
-</html>
+// DEAD CODE REMOVED — replaced by real handler above
+function _old_unused(){document.getEle
