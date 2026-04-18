@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { 
   Shield, Zap, CheckCircle, Phone, ArrowRight, Globe, 
   BrainCircuit, Workflow, Activity, Sparkles, Rocket,
   Box, Database, Layers, ChevronLeft, Clock, DollarSign, Gavel, Scale,
-  Calendar, Video, Loader2, CreditCard
+  Calendar, Video, Loader2, CreditCard, ChevronDown
 } from 'lucide-react';
 
 const ENROLL_MAILTO = 'mailto:';
@@ -75,12 +75,32 @@ const buildEnrollmentMailto = (course, { name, email, phone, company }) => {
 };
 
 const EASE_PREMIUM = [0.16, 1, 0.3, 1];
-const VIEWPORT = { once: true, margin: '-48px', amount: 0.15 };
+const VIEWPORT = { once: true, margin: '-12%', amount: 0.22 };
 
 const App = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [enrollFromListing, setEnrollFromListing] = useState(false);
   const reduceMotion = useReducedMotion();
+
+  const heroMouseX = useMotionValue(0.5);
+  const heroMouseY = useMotionValue(0.5);
+  const heroSpringX = useSpring(heroMouseX, { stiffness: 38, damping: 32, mass: 0.8 });
+  const heroSpringY = useSpring(heroMouseY, { stiffness: 38, damping: 32, mass: 0.8 });
+  const parallaxMainX = useTransform(heroSpringX, [0, 1], reduceMotion ? [0, 0] : [52, -52]);
+  const parallaxMainY = useTransform(heroSpringY, [0, 1], reduceMotion ? [0, 0] : [36, -36]);
+  const parallaxAltX = useTransform(heroSpringX, [0, 1], reduceMotion ? [0, 0] : [-28, 28]);
+  const parallaxAltY = useTransform(heroSpringY, [0, 1], reduceMotion ? [0, 0] : [-22, 22]);
+
+  const onHeroPointer = (e) => {
+    if (reduceMotion) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    heroMouseX.set((e.clientX - r.left) / r.width);
+    heroMouseY.set((e.clientY - r.top) / r.height);
+  };
+  const onHeroLeave = () => {
+    heroMouseX.set(0.5);
+    heroMouseY.set(0.5);
+  };
 
   const tr = (duration = 0.5, delay = 0) => ({
     duration: reduceMotion ? 0 : duration,
@@ -103,18 +123,32 @@ const App = () => {
   });
 
   const fadeUp = {
-    hidden: { opacity: 0, y: reduceMotion ? 0 : 28 },
-    show: { opacity: 1, y: 0, transition: tr(0.55) },
+    hidden: { opacity: 0, y: reduceMotion ? 0 : 44 },
+    show: { opacity: 1, y: 0, transition: tr(0.62) },
   };
 
   const fadeUpSm = {
-    hidden: { opacity: 0, y: reduceMotion ? 0 : 16 },
-    show: { opacity: 1, y: 0, transition: tr(0.45) },
+    hidden: { opacity: 0, y: reduceMotion ? 0 : 24 },
+    show: { opacity: 1, y: 0, transition: tr(0.5) },
+  };
+
+  const blurHeroLine = {
+    hidden: { opacity: 0, y: reduceMotion ? 0 : 36, filter: reduceMotion ? 'blur(0px)' : 'blur(14px)' },
+    show: {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
+      transition: tr(0.75, 0.06),
+    },
   };
 
   const scaleIn = {
-    hidden: { opacity: 0, scale: reduceMotion ? 1 : 0.94 },
-    show: { opacity: 1, scale: 1, transition: tr(0.5) },
+    hidden: { opacity: 0, scale: reduceMotion ? 1 : 0.88 },
+    show: {
+      opacity: 1,
+      scale: 1,
+      transition: reduceMotion ? tr(0.5) : { type: 'spring', stiffness: 160, damping: 22, mass: 0.85 },
+    },
   };
 
   const academyData = {
@@ -532,73 +566,140 @@ const App = () => {
               </div>
             </motion.nav>
 
-            {/* HERO */}
-            <section className="relative pt-40 pb-32 px-6 bg-slate-950 overflow-hidden text-center text-white">
+            {/* HERO — motion graphics layer + pointer parallax */}
+            <section
+              className="relative min-h-[88vh] flex flex-col justify-center pt-32 pb-28 px-6 overflow-hidden text-center text-white"
+              onMouseMove={onHeroPointer}
+              onMouseLeave={onHeroLeave}
+            >
+              <div className="absolute inset-0 pci-hero-mesh" aria-hidden />
+              <div className="absolute inset-0 pci-hero-grid pointer-events-none" aria-hidden />
+              <div
+                className="pointer-events-none absolute inset-0 opacity-[0.07]"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+                }}
+                aria-hidden
+              />
+
               {!reduceMotion && (
                 <>
                   <motion.div
-                    className="pointer-events-none absolute -left-32 top-20 h-[420px] w-[420px] rounded-full bg-indigo-600/25 blur-[100px]"
-                    animate={{ scale: [1, 1.12, 1], opacity: [0.35, 0.55, 0.35] }}
-                    transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+                    style={{ x: parallaxMainX, y: parallaxMainY }}
+                    className="pointer-events-none absolute left-[8%] top-[18%] h-[min(55vw,420px)] w-[min(55vw,420px)] rounded-full bg-indigo-500/35 blur-[80px] pci-float-orb"
+                    aria-hidden
                   />
                   <motion.div
-                    className="pointer-events-none absolute -right-24 bottom-10 h-[380px] w-[380px] rounded-full bg-fuchsia-600/20 blur-[90px]"
-                    animate={{ scale: [1, 1.08, 1], opacity: [0.3, 0.5, 0.3] }}
-                    transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                    style={{ x: parallaxAltX, y: parallaxAltY }}
+                    className="pointer-events-none absolute right-[5%] bottom-[12%] h-[min(50vw,380px)] w-[min(50vw,380px)] rounded-full bg-fuchsia-500/30 blur-[72px] pci-float-orb-delayed"
+                    aria-hidden
                   />
                   <motion.div
-                    className="pointer-events-none absolute left-1/2 top-1/2 h-[min(90vw,600px)] w-[min(90vw,600px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.06]"
+                    className="pointer-events-none absolute left-1/2 top-1/2 h-[min(95vw,640px)] w-[min(95vw,640px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.08] pci-ring-pulse"
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 120, repeat: Infinity, ease: 'linear' }}
+                    transition={{ duration: 100, repeat: Infinity, ease: 'linear' }}
+                    aria-hidden
+                  />
+                  <motion.div
+                    className="pointer-events-none absolute left-1/2 top-1/2 h-[min(75vw,520px)] w-[min(75vw,520px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-400/10"
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 140, repeat: Infinity, ease: 'linear' }}
+                    aria-hidden
                   />
                 </>
               )}
+
               <motion.div
-                className="max-w-5xl mx-auto relative z-10"
+                className="max-w-5xl mx-auto relative z-10 flex flex-col items-center"
                 initial="hidden"
                 animate="show"
-                variants={staggerContainer(0.1)}
+                variants={staggerContainer(0.12)}
               >
-                <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white mb-8">
+                <motion.div
+                  variants={fadeUpSm}
+                  className="pci-badge-shine inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white mb-10 shadow-[0_0_40px_-8px_rgba(99,102,241,0.5)]"
+                >
                   <motion.span
-                    animate={reduceMotion ? {} : { rotate: [0, 12, -8, 0] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                    animate={reduceMotion ? {} : { rotate: [0, 18, -12, 0] }}
+                    transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
                   >
-                    <Sparkles size={12} className="text-fuchsia-400" />
+                    <Sparkles size={14} className="text-fuchsia-300 drop-shadow-[0_0_8px_rgba(232,121,249,0.8)]" />
                   </motion.span>
-                  <span className="text-[9px] font-bold uppercase tracking-[0.3em]">The New Standard in Advisory</span>
+                  <span className="text-[9px] font-bold uppercase tracking-[0.35em]">The New Standard in Advisory</span>
                 </motion.div>
-                <motion.h1 variants={fadeUp} className="text-5xl md:text-7xl font-black mb-8 tracking-tight leading-tight uppercase italic">
-                  Scale <span className="text-indigo-400">Faster.</span> Build <span className="text-fuchsia-500">Smarter.</span>
+
+                <motion.h1
+                  variants={blurHeroLine}
+                  className="text-5xl md:text-7xl lg:text-8xl font-black mb-8 tracking-tight leading-[1.05] uppercase italic px-2"
+                >
+                  <span className="block md:inline">Scale </span>
+                  <span className="pci-text-shimmer">Faster.</span>
+                  <span className="block md:inline md:ml-2 mt-2 md:mt-0"> Build </span>
+                  <span className="pci-text-shimmer">Smarter.</span>
                 </motion.h1>
-                <motion.p variants={fadeUp} className="text-lg text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-                  Architecting <span className="text-white font-semibold">Agile Value Streams</span>, <span className="text-white font-semibold">DevSecOps Pipelines</span>, and <span className="text-white font-semibold">Agentic AI Models</span>.
+
+                <motion.p
+                  variants={blurHeroLine}
+                  className="text-lg md:text-xl text-slate-300 mb-12 max-w-2xl mx-auto leading-relaxed font-medium"
+                >
+                  Architecting{' '}
+                  <span className="text-white font-semibold drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]">Agile Value Streams</span>,{' '}
+                  <span className="text-white font-semibold drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]">DevSecOps Pipelines</span>, and{' '}
+                  <span className="text-white font-semibold drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]">Agentic AI Models</span>.
                 </motion.p>
-                <motion.div variants={fadeUp}>
+
+                <motion.div variants={blurHeroLine} className="relative">
+                  {!reduceMotion && (
+                    <motion.div
+                      className="absolute -inset-[2px] rounded-2xl bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-cyan-400 opacity-90 blur-[2px]"
+                      animate={{ rotate: [0, 360] }}
+                      transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+                      aria-hidden
+                    />
+                  )}
                   <motion.a
                     href="#trainings"
-                    whileHover={reduceMotion ? {} : { scale: 1.03, boxShadow: '0 20px 40px -12px rgba(168, 85, 247, 0.45)' }}
-                    whileTap={reduceMotion ? {} : { scale: 0.98 }}
-                    className="inline-flex items-center gap-3 bg-white text-slate-950 px-8 py-4 rounded-2xl font-black hover:bg-fuchsia-500 hover:text-white transition-colors shadow-xl"
+                    whileHover={reduceMotion ? {} : { scale: 1.06, y: -2 }}
+                    whileTap={reduceMotion ? {} : { scale: 0.97 }}
+                    className="relative z-10 inline-flex items-center gap-3 bg-white text-slate-950 px-10 py-4 rounded-2xl font-black hover:bg-slate-100 transition-colors pci-cta-glow text-sm md:text-base"
                   >
-                    Access Catalog <Rocket size={20} />
+                    Access Catalog <Rocket size={20} className="text-indigo-600" />
                   </motion.a>
                 </motion.div>
+
+                <motion.a
+                  href="#services"
+                  variants={fadeUpSm}
+                  className={`mt-16 flex flex-col items-center gap-2 text-[10px] font-black uppercase tracking-[0.35em] text-slate-500 hover:text-slate-300 transition-colors ${reduceMotion ? '' : 'pci-scroll-cue'}`}
+                  aria-label="Scroll to services"
+                >
+                  <span>Explore</span>
+                  <ChevronDown size={22} className="text-indigo-400/90" />
+                </motion.a>
               </motion.div>
             </section>
 
             {/* ADVISORY SERVICES */}
             <motion.section id="services" className="py-24 px-6 bg-white border-b border-slate-100">
               <div className="max-w-7xl mx-auto text-center">
-                <motion.h2
-                  initial={{ opacity: 0, y: reduceMotion ? 0 : 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={VIEWPORT}
-                  transition={tr(0.55)}
-                  className="text-4xl font-black tracking-tight text-slate-900 uppercase italic mb-16 underline decoration-indigo-500 underline-offset-8"
-                >
-                  Advisory Services
-                </motion.h2>
+                <div className="mb-16">
+                  <motion.h2
+                    initial={{ opacity: 0, y: reduceMotion ? 0 : 32, filter: reduceMotion ? 'none' : 'blur(10px)' }}
+                    whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                    viewport={VIEWPORT}
+                    transition={tr(0.65)}
+                    className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 uppercase italic"
+                  >
+                    Advisory Services
+                  </motion.h2>
+                  <motion.div
+                    initial={{ scaleX: 0, opacity: 0 }}
+                    whileInView={{ scaleX: 1, opacity: 1 }}
+                    viewport={VIEWPORT}
+                    transition={tr(0.8, 0.1)}
+                    className="mt-4 h-1.5 max-w-xs mx-auto rounded-full bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-cyan-400 origin-center"
+                  />
+                </div>
                 <motion.div
                   className="grid md:grid-cols-2 lg:grid-cols-5 gap-3"
                   initial="hidden"

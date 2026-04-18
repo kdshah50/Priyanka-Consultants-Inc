@@ -14,3 +14,192 @@
     @apply antialiased bg-slate-50;
   }
 }
+
+/* —— Motion graphics layer (hero + accents) —— */
+@keyframes pci-hero-mesh {
+  0%,
+  100% {
+    background-position: 0% 40%;
+  }
+  50% {
+    background-position: 100% 60%;
+  }
+}
+
+@keyframes pci-gradient-flow {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes pci-float-y {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-14px) scale(1.03);
+  }
+}
+
+@keyframes pci-pulse-ring {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes pci-shimmer-border {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pci-grid-drift {
+  0% {
+    transform: perspective(500px) rotateX(0deg) translateY(0);
+  }
+  100% {
+    transform: perspective(500px) rotateX(2deg) translateY(-12px);
+  }
+}
+
+@keyframes pci-scroll-hint {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(8px);
+    opacity: 1;
+  }
+}
+
+.pci-hero-mesh {
+  background:
+    radial-gradient(ellipse 90% 70% at 15% 25%, rgba(99, 102, 241, 0.55), transparent 55%),
+    radial-gradient(ellipse 70% 60% at 85% 20%, rgba(217, 70, 239, 0.45), transparent 50%),
+    radial-gradient(ellipse 80% 50% at 70% 85%, rgba(34, 211, 238, 0.25), transparent 45%),
+    radial-gradient(ellipse 60% 40% at 30% 90%, rgba(129, 140, 248, 0.2), transparent 40%),
+    #020617;
+  background-size: 220% 220%;
+  animation: pci-hero-mesh 22s ease-in-out infinite;
+}
+
+.pci-hero-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 35%, black 15%, transparent 72%);
+  animation: pci-grid-drift 28s ease-in-out infinite alternate;
+}
+
+.pci-text-shimmer {
+  background: linear-gradient(
+    105deg,
+    #a5b4fc 0%,
+    #e879f9 22%,
+    #22d3ee 45%,
+    #c084fc 68%,
+    #a5b4fc 100%
+  );
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: pci-gradient-flow 7s linear infinite;
+}
+
+@keyframes pci-badge-sweep {
+  0% {
+    transform: translateX(-130%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-15deg);
+  }
+}
+
+.pci-badge-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.pci-badge-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.22) 48%,
+    transparent 76%
+  );
+  animation: pci-badge-sweep 4.2s ease-in-out infinite;
+}
+
+.pci-cta-glow {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 4px 32px -4px rgba(99, 102, 241, 0.55),
+    0 12px 48px -8px rgba(217, 70, 239, 0.35);
+}
+
+.pci-float-orb {
+  animation: pci-float-y 7s ease-in-out infinite;
+}
+
+.pci-float-orb-delayed {
+  animation: pci-float-y 9s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+.pci-ring-pulse {
+  animation: pci-pulse-ring 5s ease-in-out infinite;
+}
+
+.pci-scroll-cue {
+  animation: pci-scroll-hint 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pci-hero-mesh,
+  .pci-hero-grid,
+  .pci-text-shimmer {
+    animation: none !important;
+  }
+
+  .pci-badge-shine::after {
+    animation: none !important;
+    opacity: 0;
+  }
+
+  .pci-float-orb,
+  .pci-float-orb-delayed,
+  .pci-ring-pulse,
+  .pci-scroll-cue {
+    animation: none !important;
+  }
+
+  .pci-hero-mesh {
+    background-position: 50% 50%;
+  }
+
+  .pci-text-shimmer {
+    background: linear-gradient(105deg, #a5b4fc, #e879f9);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+}
