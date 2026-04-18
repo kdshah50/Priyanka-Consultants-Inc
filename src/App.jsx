@@ -53,11 +53,64 @@ const buildStripePaymentUrl = (paymentLinkBase, { email, courseId }) => {
   }
 };
 
-/** Live virtual class times (ET). Next public cohort anchor. */
-const COHORT_START_LABEL = 'May 1, 2026';
-const SCHEDULE_2_DAY = `Saturday & Sunday · 9:00 AM – 5:00 PM ET · Cohort week of ${COHORT_START_LABEL}`;
-const SCHEDULE_3_DAY = `Friday, Saturday & Sunday · 9:00 AM – 5:00 PM ET · Starting ${COHORT_START_LABEL}`;
-const SCHEDULE_1_DAY = `Saturday · 9:00 AM – 5:00 PM ET · Week of ${COHORT_START_LABEL}`;
+/** First Friday of the rolling ~3-month academy window (13 weekly cohorts). */
+const COHORT_WEEKS = 13;
+const ANCHOR_FRIDAY = new Date(2026, 3, 10);
+
+const formatScheduleDate = (d) =>
+  d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+const buildCohortCalendar = (anchorFriday, numWeeks) => {
+  const y = anchorFriday.getFullYear();
+  const m = anchorFriday.getMonth();
+  const day = anchorFriday.getDate();
+  const threeDay = [];
+  const twoDay = [];
+  const oneDay = [];
+  for (let w = 0; w < numWeeks; w++) {
+    const fri = new Date(y, m, day + w * 7);
+    const sat = new Date(fri);
+    sat.setDate(fri.getDate() + 1);
+    const sun = new Date(fri);
+    sun.setDate(fri.getDate() + 2);
+    threeDay.push(`${formatScheduleDate(fri)} – ${formatScheduleDate(sun)} · Fri–Sun`);
+    twoDay.push(`${formatScheduleDate(sat)} – ${formatScheduleDate(sun)} · Sat–Sun`);
+    oneDay.push(`${formatScheduleDate(sat)} · Sat`);
+  }
+  const lastFri = new Date(y, m, day + (numWeeks - 1) * 7);
+  const lastSun = new Date(lastFri);
+  lastSun.setDate(lastFri.getDate() + 2);
+  const rangeLabel = `${formatScheduleDate(anchorFriday)} – ${formatScheduleDate(lastSun)}`;
+  return { threeDay, twoDay, oneDay, rangeLabel };
+};
+
+const COHORT = buildCohortCalendar(ANCHOR_FRIDAY, COHORT_WEEKS);
+
+const scheduleWeeksForKind = (kind) => {
+  if (kind === '3d') return COHORT.threeDay;
+  if (kind === '1d') return COHORT.oneDay;
+  return COHORT.twoDay;
+};
+
+const scheduleTitleForKind = (kind) => {
+  if (kind === '3d') return 'Friday – Sunday · 9:00 AM – 5:00 PM ET (live virtual)';
+  if (kind === '1d') return 'Saturday · 9:00 AM – 5:00 PM ET (live virtual)';
+  return 'Saturday & Sunday · 9:00 AM – 5:00 PM ET (live virtual)';
+};
+
+const catalogScheduleBlurb = (kind) => {
+  const weeks = scheduleWeeksForKind(kind);
+  if (!weeks.length) return '';
+  const short = (s) => s.replace(/ · (Fri–Sun|Sat–Sun|Sat)$/, '');
+  return `${short(weeks[0])}; ${short(weeks[1])} · +${weeks.length - 2} more · ${COHORT.rangeLabel}`;
+};
+
+const buildSchedulePlainForEnrollment = (course) => {
+  const title = scheduleTitleForKind(course.scheduleKind);
+  const weeks = scheduleWeeksForKind(course.scheduleKind);
+  const lines = weeks.map((line, i) => `  ${i + 1}. ${line}`);
+  return [title, `Cohort window: ${COHORT.rangeLabel}`, '', ...lines].join('\n');
+};
 
 const buildEnrollmentPlainText = (course, { name, email, phone, company }) =>
   [
@@ -66,7 +119,7 @@ const buildEnrollmentPlainText = (course, { name, email, phone, company }) =>
     `Course: ${course.name}`,
     `Course ID: ${course.id}`,
     `Listed price: ${course.price}`,
-    `Schedule: ${course.schedule ?? 'TBD'}`,
+    `Schedule:\n${buildSchedulePlainForEnrollment(course)}`,
     ``,
     `Name: ${name}`,
     `Email: ${email}`,
@@ -172,7 +225,7 @@ const App = () => {
         detail: "Thriving in the Digital Age", 
         price: "$895", 
         duration: "2 Days",
-        schedule: SCHEDULE_2_DAY,
+        scheduleKind: '2d',
         audience: "Executives, Managers, Consultants, and Agile Change Agents.", 
         requirements: [
           "Thrive in the Digital Age with Business Agility",
@@ -190,7 +243,7 @@ const App = () => {
         detail: "Delivering Value", 
         price: "$950", 
         duration: "2 Days",
-        schedule: SCHEDULE_2_DAY,
+        scheduleKind: '2d',
         audience: "Product Owners, Product Managers, Business Analysts, and Solution Managers.", 
         requirements: [
           "Articulate the Product Owner and Product Manager roles",
@@ -208,7 +261,7 @@ const App = () => {
         detail: "Value Stream Execution", 
         price: "$2,195", 
         duration: "3 Days",
-        schedule: SCHEDULE_3_DAY,
+        scheduleKind: '3d',
         audience: "RTEs, STEs, Program Managers, and Agile Coaches.", 
         requirements: [
           "Facilitate PI Planning and execution",
@@ -226,7 +279,7 @@ const App = () => {
         detail: "Strategy to Execution", 
         price: "$1,350", 
         duration: "2 Days",
-        schedule: SCHEDULE_2_DAY,
+        scheduleKind: '2d',
         audience: "Portfolio Managers, PMO Personnel, and Business Owners.", 
         requirements: [
           "Connect the portfolio to enterprise strategy",
@@ -244,7 +297,7 @@ const App = () => {
         detail: "Lean-Agile Excellence", 
         price: "$850", 
         duration: "2 Days",
-        schedule: SCHEDULE_2_DAY,
+        scheduleKind: '2d',
         audience: "New or existing Scrum Masters and Team Leads.", 
         requirements: [
           "Facilitate Scrum events and Iteration execution",
@@ -262,7 +315,7 @@ const App = () => {
         detail: "Delivery Pipeline", 
         price: "$995", 
         duration: "2 Days",
-        schedule: SCHEDULE_2_DAY,
+        scheduleKind: '2d',
         audience: "Developers, Testers, Operations, and System Architects.", 
         requirements: [
           "Apply the CALMR approach to DevOps",
@@ -276,19 +329,19 @@ const App = () => {
       }
     ],
     "ai": [
-      { id: "gen-ai-rag", name: "Gen AI & RAG", detail: "Architecture", price: "$1,495", duration: "3 Days", schedule: SCHEDULE_3_DAY, audience: "Architects.", requirements: ["RAG Architecture", "Vector DB Performance", "Privacy Guardrails"] },
-      { id: "prompt-eng", name: "Prompt Engineering", detail: "LLM Interfacing", price: "$795", duration: "1 Day", schedule: SCHEDULE_1_DAY, audience: "Business Leaders.", requirements: ["Zero/Few-shot Mastery", "Context Optimization", "Prompt Libraries"] },
-      { id: "ai-agents", name: "AI Agents", detail: "Agentic Workflows", price: "$1,295", duration: "2 Days", schedule: SCHEDULE_2_DAY, audience: "AI Engineers.", requirements: ["Autonomous Chains", "Self-correcting logic", "Agent Monitoring"] },
-      { id: "modern-eng", name: "Modern Engineering", detail: "TDD & BDD", price: "$1,150", duration: "2 Days", schedule: SCHEDULE_2_DAY, audience: "Developers.", requirements: ["TDD Cycles", "Cucumber/Gherkin", "CI/CD Automation"] }
+      { id: "gen-ai-rag", name: "Gen AI & RAG", detail: "Architecture", price: "$1,495", duration: "3 Days", scheduleKind: '3d', audience: "Architects.", requirements: ["RAG Architecture", "Vector DB Performance", "Privacy Guardrails"] },
+      { id: "prompt-eng", name: "Prompt Engineering", detail: "LLM Interfacing", price: "$795", duration: "1 Day", scheduleKind: '1d', audience: "Business Leaders.", requirements: ["Zero/Few-shot Mastery", "Context Optimization", "Prompt Libraries"] },
+      { id: "ai-agents", name: "AI Agents", detail: "Agentic Workflows", price: "$1,295", duration: "2 Days", scheduleKind: '2d', audience: "AI Engineers.", requirements: ["Autonomous Chains", "Self-correcting logic", "Agent Monitoring"] },
+      { id: "modern-eng", name: "Modern Engineering", detail: "TDD & BDD", price: "$1,150", duration: "2 Days", scheduleKind: '2d', audience: "Developers.", requirements: ["TDD Cycles", "Cucumber/Gherkin", "CI/CD Automation"] }
     ],
     "cloud": [
-      { id: "cloud-migration", name: "Cloud Migration", detail: "AWS/Azure/GCP", price: "$1,250", duration: "2 Days", schedule: SCHEDULE_2_DAY, audience: "IT Managers.", requirements: ["The 6 Rs of Migration", "Cloud Readiness", "Secure Data Transfer"] },
-      { id: "finops", name: "FinOps", detail: "Cost Optimization", price: "$950", duration: "2 Days", schedule: SCHEDULE_2_DAY, audience: "Finance/Cloud Leads.", requirements: ["Cost Accountability", "Optimization Plans", "Real-time Dashboards"] },
-      { id: "azure-devops", name: "Azure DevOps", detail: "Enterprise CI/CD", price: "$1,100", duration: "2 Days", schedule: SCHEDULE_2_DAY, audience: "DevOps Engineers.", requirements: ["Automated Pipelines", "Azure Artifacts", "Bicep/Terraform"] }
+      { id: "cloud-migration", name: "Cloud Migration", detail: "AWS/Azure/GCP", price: "$1,250", duration: "2 Days", scheduleKind: '2d', audience: "IT Managers.", requirements: ["The 6 Rs of Migration", "Cloud Readiness", "Secure Data Transfer"] },
+      { id: "finops", name: "FinOps", detail: "Cost Optimization", price: "$950", duration: "2 Days", scheduleKind: '2d', audience: "Finance/Cloud Leads.", requirements: ["Cost Accountability", "Optimization Plans", "Real-time Dashboards"] },
+      { id: "azure-devops", name: "Azure DevOps", detail: "Enterprise CI/CD", price: "$1,100", duration: "2 Days", scheduleKind: '2d', audience: "DevOps Engineers.", requirements: ["Automated Pipelines", "Azure Artifacts", "Bicep/Terraform"] }
     ],
     "mastery": [
-      { id: "agile-scrum", name: "Agile Foundations", detail: "Scrum & Kanban", price: "$750", duration: "2 Days", schedule: SCHEDULE_2_DAY, audience: "New Teams.", requirements: ["Roles & Artifacts", "WIP Limits", "Team Dynamics"] },
-      { id: "jira-align", name: "Jira & Jira Align", detail: "Enterprise Visibility", price: "$1,300", duration: "2 Days", schedule: SCHEDULE_2_DAY, audience: "Program Managers.", requirements: ["Cross-team Tracking", "Portfolio Visibility", "Executive Reporting"] }
+      { id: "agile-scrum", name: "Agile Foundations", detail: "Scrum & Kanban", price: "$750", duration: "2 Days", scheduleKind: '2d', audience: "New Teams.", requirements: ["Roles & Artifacts", "WIP Limits", "Team Dynamics"] },
+      { id: "jira-align", name: "Jira & Jira Align", detail: "Enterprise Visibility", price: "$1,300", duration: "2 Days", scheduleKind: '2d', audience: "Program Managers.", requirements: ["Cross-team Tracking", "Portfolio Visibility", "Executive Reporting"] }
     ]
   };
 
@@ -319,7 +372,7 @@ const App = () => {
               courseId: course.id,
               courseName: course.name,
               price: course.price,
-              schedule: course.schedule,
+              schedule: buildSchedulePlainForEnrollment(course),
               name: enroll.name,
               email: enroll.email,
               phone: enroll.phone,
@@ -370,8 +423,8 @@ const App = () => {
             <motion.span variants={fadeUpSm} className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-800 px-3 py-1 text-[9px] font-black uppercase tracking-widest border border-emerald-200">
               <Video size={12} className="shrink-0" /> Live virtual
             </motion.span>
-            <motion.span variants={fadeUpSm} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 text-slate-600 px-3 py-1 text-[9px] font-bold uppercase tracking-widest">
-              <Calendar size={12} /> {COHORT_START_LABEL} cohort
+            <motion.span variants={fadeUpSm} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 text-slate-600 px-3 py-1 text-[9px] font-bold uppercase tracking-widest max-w-[min(100%,280px)] text-left leading-tight">
+              <Calendar size={12} className="shrink-0" /> {COHORT_WEEKS} weekly cohorts · {COHORT.rangeLabel}
             </motion.span>
           </motion.div>
           <motion.h1
@@ -392,10 +445,21 @@ const App = () => {
               <div className="flex items-center gap-2 text-indigo-600 font-black text-xl"><DollarSign size={20}/> {course.price}</div>
               <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest"><Clock size={16}/> {course.duration} Session</div>
             </div>
-            <p className="flex items-start gap-3 text-sm font-semibold text-slate-700 leading-relaxed max-w-2xl">
-              <Calendar className="shrink-0 text-indigo-600 mt-0.5" size={18} strokeWidth={2} />
-              <span>{course.schedule}</span>
-            </p>
+            <div className="max-w-2xl space-y-3">
+              <p className="flex items-start gap-3 text-sm font-bold text-slate-800 leading-relaxed">
+                <Calendar className="shrink-0 text-indigo-600 mt-0.5" size={18} strokeWidth={2} />
+                <span>{scheduleTitleForKind(course.scheduleKind)}</span>
+              </p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-9">Cohort window · {COHORT.rangeLabel}</p>
+              <ul className="list-none space-y-1.5 pl-9 text-xs font-semibold text-slate-700 border-l-2 border-indigo-200 ml-[1.125rem]">
+                {scheduleWeeksForKind(course.scheduleKind).map((line, i) => (
+                  <li key={`wk-${i}`} className="pl-2">
+                    <span className="text-slate-400 font-black mr-2 tabular-nums">{i + 1}.</span>
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </motion.div>
           <div className="grid md:grid-cols-2 gap-12 mb-16">
             <motion.section initial="hidden" whileInView="show" viewport={VIEWPORT} variants={staggerContainer(0.08)}>
@@ -969,7 +1033,7 @@ const App = () => {
                               {c.name}
                             </button>
                             <p className="text-[8px] uppercase tracking-widest text-slate-400 font-bold mt-1 italic leading-tight mb-2">{c.detail}</p>
-                            <p className="text-[9px] font-semibold text-slate-600 leading-snug mb-3 border-l-2 border-indigo-200 pl-2">{c.schedule}</p>
+                            <p className="text-[9px] font-semibold text-slate-600 leading-snug mb-3 border-l-2 border-indigo-200 pl-2">{catalogScheduleBlurb(c.scheduleKind)}</p>
                             <div className="flex items-baseline justify-between gap-2 mb-3">
                               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Investment</span>
                               <span className="text-lg font-black text-indigo-600">{c.price}</span>
