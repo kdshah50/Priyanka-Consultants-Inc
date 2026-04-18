@@ -4,7 +4,7 @@ import {
   Shield, Zap, CheckCircle, Phone, ArrowRight, Globe, 
   BrainCircuit, Workflow, Activity, Sparkles, Rocket,
   Box, Database, Layers, ChevronLeft, Clock, DollarSign, Gavel, Scale,
-  Calendar, Video, Loader2, CreditCard, ChevronDown
+  Calendar, Video, Loader2, CreditCard, ChevronDown, Quote, Users, Building2, HelpCircle
 } from 'lucide-react';
 
 const ENROLL_MAILTO = 'mailto:';
@@ -148,6 +148,120 @@ const buildEnrollmentMailto = (course, payload) => {
 const EASE_PREMIUM = [0.16, 1, 0.3, 1];
 const VIEWPORT = { once: true, margin: '-12%', amount: 0.22 };
 
+const SITE_ORIGIN = (import.meta.env.VITE_SITE_URL || 'https://www.priyankaconsultants.com').replace(/\/$/, '');
+const CONTACT_EMAIL = (import.meta.env.VITE_CONTACT_EMAIL || 'hello@priyankaconsultants.com').trim();
+
+const buildMailto = (subject, body) => {
+  const s = encodeURIComponent(subject);
+  const b = encodeURIComponent(body);
+  return `${ENROLL_MAILTO}${CONTACT_EMAIL}?subject=${s}&body=${b}`;
+};
+
+const CREDIBILITY_POINTS = [
+  { title: 'Practitioner-led', text: 'Curriculum tied to real transformations—not slides-only theory.' },
+  { title: 'Enterprise focus', text: 'SAFe®, cloud, DevOps, and AI topics aligned to how large teams ship.' },
+  { title: 'Live virtual cohorts', text: `Sessions run in Eastern Time (ET), ${COHORT_WEEKS} rolling weeks per catalog window.` },
+];
+
+const TESTIMONIALS = [
+  {
+    quote: 'Clear structure and practical examples we could take back to our ART the next week.',
+    name: 'Program lead',
+    role: 'Fortune 500 technology',
+  },
+  {
+    quote: 'Strong on connecting strategy to execution—exactly what our leadership workshop needed.',
+    name: 'Director, transformation',
+    role: 'Financial services',
+  },
+  {
+    quote: 'Responsive team, simple enrollment, and solid materials for our distributed engineers.',
+    name: 'Engineering manager',
+    role: 'Healthcare tech',
+  },
+];
+
+const FAQ_ITEMS = [
+  {
+    q: 'Are sessions really live virtual?',
+    a: 'Yes. Classes are instructor-led online. Class hours are listed in Eastern Time (ET) on each course page.',
+  },
+  {
+    q: 'What does “cohort” mean on the calendar?',
+    a: 'We publish a rolling window of weekly session options. You pick the week that fits your schedule before you register so we can hold the right dates.',
+  },
+  {
+    q: 'Do I get certification exam vouchers?',
+    a: 'Where a course includes a Scaled Agile exam, details are listed under Learning Objectives on the course page. Update voucher policy here when you finalize vendor terms.',
+  },
+  {
+    q: 'Can my company book a private class?',
+    a: 'Yes. We run private cohorts for teams—same curriculum, your schedule. Use the Private training section or email us with headcount and timeframe.',
+  },
+  {
+    q: 'What is your refund or reschedule policy?',
+    a: 'Add your standard policy here (e.g. transfers up to N days, refunds under specific conditions). This placeholder keeps the section ready.',
+  },
+  {
+    q: 'How do you use my contact information?',
+    a: 'We use it only to confirm enrollment, send class logistics, and follow up about training you requested. We do not sell or rent your information.',
+  },
+];
+
+const FIT_CALL_MAILTO = buildMailto(
+  '15-minute fit call — Priyanka Consultants',
+  'Hello,\n\nI would like to schedule a brief call to discuss training options.\n\nName:\nCompany:\nRole:\nBest times (US Eastern):\nPhone:\n',
+);
+
+const CORPORATE_MAILTO = buildMailto(
+  'Private / corporate training — Priyanka Consultants',
+  'Hello,\n\nWe are interested in a private cohort for our team.\n\nCompany:\nApproximate headcount:\nCourses or topics:\nPreferred timeframe:\nTime zone:\n',
+);
+
+const buildCatalogJsonLd = (data) => {
+  const courses = Object.values(data)
+    .flat()
+    .map((c) => ({
+      '@type': 'Course',
+      name: c.name,
+      description: `${c.detail}. ${c.audience}`,
+      provider: {
+        '@type': 'Organization',
+        name: 'Priyanka Consultants, Inc.',
+        url: SITE_ORIGIN,
+      },
+      offers: {
+        '@type': 'Offer',
+        price: String(c.price).replace(/[^0-9.]/g, '') || '0',
+        priceCurrency: 'USD',
+      },
+    }));
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': `${SITE_ORIGIN}#organization`,
+        name: 'Priyanka Consultants, Inc.',
+        url: SITE_ORIGIN,
+        telephone: '+1-732-998-3418',
+        description: 'Agile, DevSecOps, AI, and cloud training and advisory.',
+      },
+      {
+        '@type': 'ItemList',
+        '@id': `${SITE_ORIGIN}#catalog`,
+        name: 'Priyanka Consultants Academy',
+        numberOfItems: courses.length,
+        itemListElement: courses.map((item, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          item,
+        })),
+      },
+    ],
+  };
+};
+
 const App = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [enrollFromListing, setEnrollFromListing] = useState(false);
@@ -240,7 +354,12 @@ const App = () => {
           "Explore Lean Portfolio Management",
           "Lead the SAFe® Transformation",
           "Exam: 45 Questions | 90 Mins | 80% Passing Score"
-        ] 
+        ],
+        outcomes: [
+          'Explain how SAFe® enables business agility at enterprise scale',
+          'Facilitate alignment conversations across teams and portfolios',
+          'Prepare for the Leading SAFe® certification exam where applicable',
+        ],
       },
       { 
         id: "safe-po-pm", 
@@ -258,7 +377,12 @@ const App = () => {
           "Collaborate with Agile teams to estimate work",
           "Execute Planning Intervals (PI) and deliver value",
           "Exam: 45 Questions | 90 Mins | 78% Passing Score"
-        ] 
+        ],
+        outcomes: [
+          'Operate effectively as a PO or PM in a SAFe® environment',
+          'Break down work from epics to stories with clear value focus',
+          'Collaborate through PI planning and backlog management',
+        ],
       },
       { 
         id: "safe-rte", 
@@ -276,7 +400,12 @@ const App = () => {
           "Apply Lean-Agile coaching for high performance",
           "Harness AI to accelerate ART problem-solving",
           "Exam: 60 Questions | 120 Mins | 75% Passing Score"
-        ] 
+        ],
+        outcomes: [
+          'Facilitate PI planning and coach ARTs toward predictable delivery',
+          'Remove impediments to flow across teams and dependencies',
+          'Strengthen inspect-and-adapt habits at program level',
+        ],
       },
       { 
         id: "safe-lpm", 
@@ -294,7 +423,12 @@ const App = () => {
           "Measure Lean Portfolio performance",
           "Build a plan for LPM implementation",
           "Exam: 45 Questions | 90 Mins | 71% Passing Score"
-        ] 
+        ],
+        outcomes: [
+          'Connect portfolio investments to strategy and outcomes',
+          'Apply lean budgeting and guardrails in a portfolio context',
+          'Use portfolio Kanban to improve flow of epics and initiatives',
+        ],
       },
       { 
         id: "safe-sm", 
@@ -312,7 +446,12 @@ const App = () => {
           "Support DevOps implementation and flow",
           "Use AI to streamline retrospectives and refinement",
           "Exam: 45 Questions | 90 Mins | 73% Passing Score"
-        ] 
+        ],
+        outcomes: [
+          'Facilitate Scrum and SAFe® team events with confidence',
+          'Coach teams toward predictable delivery and quality',
+          'Support PI planning, dependencies, and continuous improvement',
+        ],
       },
       { 
         id: "safe-devops", 
@@ -330,23 +469,118 @@ const App = () => {
           "Map value streams to identify bottlenecks",
           "Build an actionable transformation plan",
           "Exam: 45 Questions | 90 Mins | 73% Passing Score"
-        ] 
+        ],
+        outcomes: [
+          'Map and improve the continuous delivery pipeline with CALMR',
+          'Align DevOps practices with ART and team priorities',
+          'Build a practical DevOps transformation backlog',
+        ],
       }
     ],
     "ai": [
-      { id: "gen-ai-rag", name: "Gen AI & RAG", detail: "Architecture", price: "$1,495", duration: "3 Days", scheduleKind: '3d', audience: "Architects.", requirements: ["RAG Architecture", "Vector DB Performance", "Privacy Guardrails"] },
-      { id: "prompt-eng", name: "Prompt Engineering", detail: "LLM Interfacing", price: "$795", duration: "1 Day", scheduleKind: '1d', audience: "Business Leaders.", requirements: ["Zero/Few-shot Mastery", "Context Optimization", "Prompt Libraries"] },
-      { id: "ai-agents", name: "AI Agents", detail: "Agentic Workflows", price: "$1,295", duration: "2 Days", scheduleKind: '2d', audience: "AI Engineers.", requirements: ["Autonomous Chains", "Self-correcting logic", "Agent Monitoring"] },
-      { id: "modern-eng", name: "Modern Engineering", detail: "TDD & BDD", price: "$1,150", duration: "2 Days", scheduleKind: '2d', audience: "Developers.", requirements: ["TDD Cycles", "Cucumber/Gherkin", "CI/CD Automation"] }
+      {
+        id: "gen-ai-rag",
+        name: "Gen AI & RAG",
+        detail: "Architecture",
+        price: "$1,495",
+        duration: "3 Days",
+        scheduleKind: '3d',
+        audience: "Architects.",
+        requirements: ["RAG Architecture", "Vector DB Performance", "Privacy Guardrails"],
+        outcomes: ['Design retrieval-augmented flows for enterprise knowledge', 'Compare vector stores and latency/cost tradeoffs', 'Apply privacy guardrails suitable for regulated data'],
+      },
+      {
+        id: "prompt-eng",
+        name: "Prompt Engineering",
+        detail: "LLM Interfacing",
+        price: "$795",
+        duration: "1 Day",
+        scheduleKind: '1d',
+        audience: "Business Leaders.",
+        requirements: ["Zero/Few-shot Mastery", "Context Optimization", "Prompt Libraries"],
+        outcomes: ['Write reliable prompts for business and analytics use cases', 'Structure context windows for accuracy and safety', 'Build reusable prompt patterns for teams'],
+      },
+      {
+        id: "ai-agents",
+        name: "AI Agents",
+        detail: "Agentic Workflows",
+        price: "$1,295",
+        duration: "2 Days",
+        scheduleKind: '2d',
+        audience: "AI Engineers.",
+        requirements: ["Autonomous Chains", "Self-correcting logic", "Agent Monitoring"],
+        outcomes: ['Chain tools and models into auditable agent workflows', 'Add monitoring, retries, and human-in-the-loop checkpoints', 'Reduce failure modes in production agent systems'],
+      },
+      {
+        id: "modern-eng",
+        name: "Modern Engineering",
+        detail: "TDD & BDD",
+        price: "$1,150",
+        duration: "2 Days",
+        scheduleKind: '2d',
+        audience: "Developers.",
+        requirements: ["TDD Cycles", "Cucumber/Gherkin", "CI/CD Automation"],
+        outcomes: ['Practice red-green-refactor with meaningful tests', 'Express behavior with BDD scenarios teams can share', 'Automate feedback in CI for faster, safer releases'],
+      },
     ],
     "cloud": [
-      { id: "cloud-migration", name: "Cloud Migration", detail: "AWS/Azure/GCP", price: "$1,250", duration: "2 Days", scheduleKind: '2d', audience: "IT Managers.", requirements: ["The 6 Rs of Migration", "Cloud Readiness", "Secure Data Transfer"] },
-      { id: "finops", name: "FinOps", detail: "Cost Optimization", price: "$950", duration: "2 Days", scheduleKind: '2d', audience: "Finance/Cloud Leads.", requirements: ["Cost Accountability", "Optimization Plans", "Real-time Dashboards"] },
-      { id: "azure-devops", name: "Azure DevOps", detail: "Enterprise CI/CD", price: "$1,100", duration: "2 Days", scheduleKind: '2d', audience: "DevOps Engineers.", requirements: ["Automated Pipelines", "Azure Artifacts", "Bicep/Terraform"] }
+      {
+        id: "cloud-migration",
+        name: "Cloud Migration",
+        detail: "AWS/Azure/GCP",
+        price: "$1,250",
+        duration: "2 Days",
+        scheduleKind: '2d',
+        audience: "IT Managers.",
+        requirements: ["The 6 Rs of Migration", "Cloud Readiness", "Secure Data Transfer"],
+        outcomes: ['Choose migration strategies aligned to risk and cost', 'Assess readiness across apps, data, and operations', 'Plan secure, observable cutovers with rollback thinking'],
+      },
+      {
+        id: "finops",
+        name: "FinOps",
+        detail: "Cost Optimization",
+        price: "$950",
+        duration: "2 Days",
+        scheduleKind: '2d',
+        audience: "Finance/Cloud Leads.",
+        requirements: ["Cost Accountability", "Optimization Plans", "Real-time Dashboards"],
+        outcomes: ['Build shared visibility into cloud spend and unit economics', 'Prioritize optimizations that engineering can execute', 'Align finance and engineering on forecasts and guardrails'],
+      },
+      {
+        id: "azure-devops",
+        name: "Azure DevOps",
+        detail: "Enterprise CI/CD",
+        price: "$1,100",
+        duration: "2 Days",
+        scheduleKind: '2d',
+        audience: "DevOps Engineers.",
+        requirements: ["Automated Pipelines", "Azure Artifacts", "Bicep/Terraform"],
+        outcomes: ['Automate build, test, and release with Azure Pipelines', 'Manage artifacts, environments, and approvals for enterprise teams', 'Apply IaC patterns with Bicep/Terraform for repeatability'],
+      },
     ],
     "mastery": [
-      { id: "agile-scrum", name: "Agile Foundations", detail: "Scrum & Kanban", price: "$750", duration: "2 Days", scheduleKind: '2d', audience: "New Teams.", requirements: ["Roles & Artifacts", "WIP Limits", "Team Dynamics"] },
-      { id: "jira-align", name: "Jira & Jira Align", detail: "Enterprise Visibility", price: "$1,300", duration: "2 Days", scheduleKind: '2d', audience: "Program Managers.", requirements: ["Cross-team Tracking", "Portfolio Visibility", "Executive Reporting"] }
+      {
+        id: "agile-scrum",
+        name: "Agile Foundations",
+        detail: "Scrum & Kanban",
+        price: "$750",
+        duration: "2 Days",
+        scheduleKind: '2d',
+        audience: "New Teams.",
+        requirements: ["Roles & Artifacts", "WIP Limits", "Team Dynamics"],
+        outcomes: ['Run Scrum events with clear roles and artifacts', 'Use Kanban signals to improve flow and predictability', 'Build team norms that sustain improvement'],
+      },
+      {
+        id: "jira-align",
+        name: "Jira & Jira Align",
+        detail: "Enterprise Visibility",
+        price: "$1,300",
+        duration: "2 Days",
+        scheduleKind: '2d',
+        audience: "Program Managers.",
+        requirements: ["Cross-team Tracking", "Portfolio Visibility", "Executive Reporting"],
+        outcomes: ['Connect team execution to program and portfolio views', 'Design dashboards executives actually use', 'Reduce duplicate tracking across tools and teams'],
+      },
     ]
   };
 
@@ -384,6 +618,10 @@ const App = () => {
     }, [scrollToEnroll, course?.id]);
 
     const stripeUrlForCourse = paymentLinkForCourse(course);
+    const outcomeLines =
+      course.outcomes && course.outcomes.length > 0
+        ? course.outcomes
+        : (course.requirements || []).slice(0, 3);
 
     const submitEnroll = async (e) => {
       e.preventDefault();
@@ -524,6 +762,30 @@ const App = () => {
           </div>
 
           <motion.section
+            initial="hidden"
+            whileInView="show"
+            viewport={VIEWPORT}
+            variants={staggerContainer(0.06)}
+            className="mb-16 rounded-[2rem] border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-white p-8 md:p-10"
+          >
+            <motion.h2 variants={fadeUp} className="text-xl font-black text-slate-900 uppercase italic border-b-2 border-indigo-600 inline-block mb-6">
+              What you&apos;ll be able to do
+            </motion.h2>
+            <ul className="grid sm:grid-cols-1 md:grid-cols-3 gap-4">
+              {outcomeLines.map((line, i) => (
+                <motion.li
+                  key={`out-${i}`}
+                  variants={fadeUpSm}
+                  className="flex gap-3 text-sm font-semibold text-slate-800 bg-white/90 p-4 rounded-xl border border-indigo-100 shadow-sm"
+                >
+                  <Rocket className="text-indigo-600 shrink-0 mt-0.5" size={18} />
+                  <span>{line}</span>
+                </motion.li>
+              ))}
+            </ul>
+          </motion.section>
+
+          <motion.section
             id="enroll"
             ref={enrollRef}
             initial={{ opacity: 0, y: reduceMotion ? 0 : 32 }}
@@ -626,6 +888,9 @@ const App = () => {
                   <a href="tel:7329983418" className="font-black text-indigo-700 underline decoration-indigo-300 underline-offset-2">732-998-3418</a>.
                 </>
               )}
+            </p>
+            <p className="text-[11px] text-slate-500 font-medium mb-6 max-w-2xl leading-relaxed border-l-2 border-slate-200 pl-4">
+              <strong className="text-slate-700">Privacy.</strong> We use your name, email, and phone only to confirm enrollment, send class logistics, and follow up about training you requested. We do not sell or rent your information. You can update this wording anytime to match your policy.
             </p>
             {!stripeUrlForCourse && (
               <div className="mb-8 flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3 text-xs font-bold text-emerald-950">
@@ -765,6 +1030,10 @@ const App = () => {
           />
         ) : (
           <motion.div key="main" {...fadeIn}>
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(buildCatalogJsonLd(academyData)) }}
+            />
             {/* NAVIGATION */}
             <motion.nav
               initial={{ y: reduceMotion ? 0 : -24, opacity: reduceMotion ? 1 : 0 }}
@@ -782,11 +1051,14 @@ const App = () => {
                   <span className="text-xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-fuchsia-600 italic uppercase">Priyanka</span>
                   <span className="text-[8px] font-bold tracking-[0.4em] text-slate-900 uppercase">Consultants, Inc.</span>
                 </motion.div>
-                <div className="hidden lg:flex items-center gap-8 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                <div className="hidden lg:flex items-center gap-6 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   <motion.a href="#services" whileHover={reduceMotion ? {} : { y: -2 }} className="hover:text-fuchsia-600 transition-colors">Services</motion.a>
                   <motion.a href="#compliance" whileHover={reduceMotion ? {} : { y: -2 }} className="hover:text-amber-600 transition-colors">Compliance</motion.a>
+                  <motion.a href="#credibility" whileHover={reduceMotion ? {} : { y: -2 }} className="hover:text-cyan-600 transition-colors">Why us</motion.a>
                   <motion.a href="#approach" whileHover={reduceMotion ? {} : { y: -2 }} className="hover:text-indigo-600 transition-all">Approach</motion.a>
                   <motion.a href="#trainings" whileHover={reduceMotion ? {} : { y: -2 }} className="hover:text-emerald-600 transition-all font-black text-indigo-600">Academy</motion.a>
+                  <motion.a href="#corporate" whileHover={reduceMotion ? {} : { y: -2 }} className="hover:text-violet-600 transition-colors">Teams</motion.a>
+                  <motion.a href="#faq" whileHover={reduceMotion ? {} : { y: -2 }} className="hover:text-slate-800 transition-colors">FAQ</motion.a>
                   <motion.a
                     href="tel:7329983418"
                     whileHover={reduceMotion ? {} : { scale: 1.04 }}
@@ -898,6 +1170,21 @@ const App = () => {
                   >
                     Access Catalog <Rocket size={20} className="text-indigo-600" />
                   </motion.a>
+                </motion.div>
+
+                <motion.div
+                  variants={blurHeroLine}
+                  className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[10px] font-black uppercase tracking-[0.28em] text-slate-400"
+                >
+                  <a href={CORPORATE_MAILTO} className="hover:text-white transition-colors border-b border-white/20 pb-0.5">
+                    Private training
+                  </a>
+                  <a href={FIT_CALL_MAILTO} className="hover:text-white transition-colors border-b border-white/20 pb-0.5">
+                    Book a fit call
+                  </a>
+                  <a href="#faq" className="hover:text-white transition-colors border-b border-white/20 pb-0.5">
+                    FAQ
+                  </a>
                 </motion.div>
 
                 <motion.a
@@ -1073,6 +1360,124 @@ const App = () => {
               </div>
             </motion.section>
 
+            {/* CREDIBILITY & TESTIMONIALS */}
+            <motion.section id="credibility" className="py-24 px-6 bg-white border-b border-slate-100">
+              <div className="max-w-7xl mx-auto">
+                <motion.div
+                  className="text-center mb-14"
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={VIEWPORT}
+                  transition={tr(0.5)}
+                >
+                  <h2 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 uppercase italic mb-3">Why train with us</h2>
+                  <p className="text-slate-500 text-sm font-medium max-w-2xl mx-auto">
+                    Practical enterprise training—update bios, logos, and metrics here when you are ready.
+                  </p>
+                </motion.div>
+                <div className="grid md:grid-cols-3 gap-6 mb-20">
+                  {CREDIBILITY_POINTS.map((p, i) => (
+                    <motion.div
+                      key={`cred-${i}`}
+                      initial={{ opacity: 0, y: reduceMotion ? 0 : 24 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={VIEWPORT}
+                      transition={tr(0.45, i * 0.06)}
+                      className="rounded-[2rem] border border-slate-200 bg-slate-50/80 p-8 shadow-sm"
+                    >
+                      <div className="flex items-center gap-2 mb-4 text-indigo-600">
+                        <Users size={22} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Signal</span>
+                      </div>
+                      <h3 className="text-lg font-black text-slate-900 italic mb-2">{p.title}</h3>
+                      <p className="text-sm text-slate-600 font-medium leading-relaxed">{p.text}</p>
+                    </motion.div>
+                  ))}
+                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={VIEWPORT}
+                  transition={tr(0.5)}
+                  className="text-center mb-10"
+                >
+                  <h3 className="text-2xl font-black text-slate-900 uppercase italic mb-2">What teams say</h3>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Replace with named clients when you have permission</p>
+                </motion.div>
+                <div className="grid md:grid-cols-3 gap-6">
+                  {TESTIMONIALS.map((t, i) => (
+                    <motion.blockquote
+                      key={`tq-${i}`}
+                      initial={{ opacity: 0, y: reduceMotion ? 0 : 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={VIEWPORT}
+                      transition={tr(0.45, i * 0.07)}
+                      className="rounded-[2rem] bg-slate-900 text-white p-8 border border-white/10 shadow-xl flex flex-col gap-4"
+                    >
+                      <Quote className="text-indigo-400 opacity-80" size={28} aria-hidden />
+                      <p className="text-sm font-medium leading-relaxed text-slate-100">&ldquo;{t.quote}&rdquo;</p>
+                      <footer className="mt-auto pt-2 border-t border-white/10">
+                        <cite className="not-italic text-[11px] font-black uppercase tracking-widest text-indigo-300">{t.name}</cite>
+                        <p className="text-[10px] font-semibold text-slate-400 mt-1">{t.role}</p>
+                      </footer>
+                    </motion.blockquote>
+                  ))}
+                </div>
+              </div>
+            </motion.section>
+
+            {/* CORPORATE / PRIVATE TRAINING */}
+            <motion.section id="corporate" className="py-24 px-6 bg-indigo-950 text-white relative overflow-hidden">
+              {!reduceMotion && (
+                <motion.div
+                  className="pointer-events-none absolute right-0 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-fuchsia-500/15 blur-3xl"
+                  animate={{ opacity: [0.4, 0.7, 0.4] }}
+                  transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              )}
+              <div className="max-w-7xl mx-auto relative z-10 grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[9px] font-black uppercase tracking-widest mb-4">
+                    <Building2 size={14} /> Private cohorts
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-black uppercase italic mb-4 leading-tight">Corporate &amp; private training</h2>
+                  <p className="text-slate-300 text-sm font-medium leading-relaxed max-w-xl mb-6">
+                    Same courses, your dates—ideal for leadership offsites, ARTs, platform teams, and cloud centers of excellence. We tailor exercises and examples to your context.
+                  </p>
+                  <ul className="space-y-3 mb-8 text-sm text-slate-200 font-medium">
+                    <li className="flex gap-2"><CheckCircle className="shrink-0 text-emerald-400" size={18} /> Dedicated cohort on your calendar</li>
+                    <li className="flex gap-2"><CheckCircle className="shrink-0 text-emerald-400" size={18} /> Optional NDA-friendly case studies</li>
+                    <li className="flex gap-2"><CheckCircle className="shrink-0 text-emerald-400" size={18} /> Volume and multi-class packages (ask in email)</li>
+                  </ul>
+                </div>
+                <div className="rounded-[2rem] bg-white/10 border border-white/15 p-8 backdrop-blur-sm">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-4">Request a quote</p>
+                  <p className="text-sm text-slate-200 font-medium mb-6">
+                    Email us with headcount, courses, and timeframe. Prefer a quick call first? Use <strong className="text-white">Book a fit call</strong> in the hero.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <motion.a
+                      href={CORPORATE_MAILTO}
+                      whileHover={reduceMotion ? {} : { scale: 1.02 }}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-white text-indigo-950 px-8 py-3.5 font-black text-xs uppercase tracking-widest shadow-lg"
+                    >
+                      Email for private training
+                    </motion.a>
+                    <motion.a
+                      href={FIT_CALL_MAILTO}
+                      whileHover={reduceMotion ? {} : { scale: 1.02 }}
+                      className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-white/40 px-8 py-3.5 font-black text-xs uppercase tracking-widest text-white hover:bg-white/10"
+                    >
+                      15-minute fit call
+                    </motion.a>
+                  </div>
+                  <p className="mt-6 text-[11px] text-slate-400 font-medium">
+                    Contact: <span className="text-slate-200">{CONTACT_EMAIL}</span> · <a href="tel:7329983418" className="underline decoration-indigo-400/50">732-998-3418</a>
+                  </p>
+                </div>
+              </div>
+            </motion.section>
+
             {/* ACADEMY */}
             <motion.section id="trainings" className="py-24 px-6 bg-slate-50">
               <div className="max-w-7xl mx-auto">
@@ -1083,8 +1488,11 @@ const App = () => {
                   transition={tr(0.5)}
                 >
                   <h2 className="text-4xl font-black tracking-tight mb-4 text-center uppercase italic">Academy <span className="text-indigo-600 text-3xl">Catalog</span></h2>
-                  <p className="text-center text-slate-500 text-sm font-medium max-w-2xl mx-auto mb-8">
+                  <p className="text-center text-slate-500 text-sm font-medium max-w-2xl mx-auto mb-3">
                     Pick a course, review objectives, then <strong className="text-slate-700">enroll</strong>. Courses marked <strong className="text-indigo-600">Stripe · Pay online</strong> continue to Stripe’s hosted checkout after you submit the form (card, Apple Pay, Google Pay where available). Otherwise we confirm by phone or email.
+                  </p>
+                  <p className="text-center text-slate-400 text-xs font-semibold max-w-2xl mx-auto mb-8">
+                    Scheduled class times are listed in <strong className="text-slate-600">US Eastern (ET)</strong> unless your cohort confirmation states otherwise.
                   </p>
                 </motion.div>
 
@@ -1185,9 +1593,10 @@ const App = () => {
                       <ul className="space-y-4">
                         {courses.map((c) => (
                           <motion.li
+                            id={`course-${c.id}`}
                             key={c.id}
                             whileHover={reduceMotion ? {} : { y: -3 }}
-                            className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 hover:border-indigo-200 hover:bg-white transition-colors"
+                            className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 hover:border-indigo-200 hover:bg-white transition-colors scroll-mt-28"
                           >
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <span className="text-[8px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Live virtual</span>
@@ -1224,6 +1633,44 @@ const App = () => {
                           </motion.li>
                         ))}
                       </ul>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.section>
+
+            {/* FAQ */}
+            <motion.section id="faq" className="py-24 px-6 bg-white border-t border-slate-100">
+              <div className="max-w-3xl mx-auto">
+                <motion.div
+                  className="text-center mb-12"
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={VIEWPORT}
+                  transition={tr(0.5)}
+                >
+                  <div className="inline-flex items-center justify-center gap-2 text-indigo-600 mb-3">
+                    <HelpCircle size={28} strokeWidth={2} aria-hidden />
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 uppercase italic">Academy FAQ</h2>
+                  <p className="text-slate-500 text-sm font-medium mt-3">Edit answers anytime—placeholders marked where you should add policy detail.</p>
+                </motion.div>
+                <div className="space-y-3">
+                  {FAQ_ITEMS.map((item, i) => (
+                    <motion.div
+                      key={`faq-${i}`}
+                      initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={VIEWPORT}
+                      transition={tr(0.4, i * 0.04)}
+                    >
+                      <details className="group rounded-2xl border border-slate-200 bg-slate-50/90 px-5 py-4 open:bg-white open:shadow-md open:border-indigo-200">
+                        <summary className="cursor-pointer list-none font-black text-slate-900 text-sm flex items-center justify-between gap-4">
+                          <span>{item.q}</span>
+                          <ChevronDown className="shrink-0 text-indigo-500 transition-transform group-open:rotate-180" size={20} />
+                        </summary>
+                        <p className="mt-3 text-sm text-slate-600 font-medium leading-relaxed border-t border-slate-100 pt-3">{item.a}</p>
+                      </details>
                     </motion.div>
                   ))}
                 </div>
