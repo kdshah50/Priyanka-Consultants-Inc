@@ -37,10 +37,16 @@ const stripePaymentLinkByCourseId = {
 const paymentLinkForCourse = (course) =>
   (stripePaymentLinkByCourseId[course.id] || course.stripePaymentLink || defaultStripePaymentLink() || '').trim();
 
-const buildStripePaymentUrl = (paymentLinkBase, email) => {
+/** Stripe Payment Link query params — see https://stripe.com/docs/payment-links/customize */
+const buildStripePaymentUrl = (paymentLinkBase, { email, courseId }) => {
   try {
     const u = new URL(paymentLinkBase);
     if (email) u.searchParams.set('prefilled_email', email);
+    if (courseId) {
+      const safe = String(courseId).replace(/[^a-zA-Z0-9_-]/g, '');
+      const ref = `pci_${safe}_${Date.now()}`.slice(0, 200);
+      u.searchParams.set('client_reference_id', ref);
+    }
     return u.toString();
   } catch {
     return paymentLinkBase;
@@ -310,7 +316,9 @@ const App = () => {
         } catch {
           /* ignore quota / private mode */
         }
-        window.location.assign(buildStripePaymentUrl(stripeUrlForCourse, enroll.email));
+        window.location.assign(
+          buildStripePaymentUrl(stripeUrlForCourse, { email: enroll.email, courseId: course.id })
+        );
         return;
       }
 
@@ -405,13 +413,15 @@ const App = () => {
             <p className="text-slate-500 text-sm font-medium mb-4 max-w-xl">
               {stripeUrlForCourse ? (
                 <>
-                  After you submit, you’ll open <strong className="text-slate-700">secure checkout</strong> to pay with a credit or debit card. Use the same email here and at checkout so we can match your enrollment.
+                  Submit the form, then you’ll continue to <strong className="text-slate-800">Stripe Checkout</strong> to pay online with a card (and Apple Pay / Google Pay where Stripe offers them).{' '}
+                  <strong className="text-slate-800">Use the same work email</strong> here and on Stripe so we can match your payment to this registration.
                 </>
               ) : (
                 <>
-                  Submit your details below—we’ll confirm your seat. <strong className="text-slate-700">Pay by credit card</strong> by calling{' '}
+                  <strong className="text-slate-800">Online checkout is not set up for this course yet.</strong> Submit your details—we’ll confirm your seat.{' '}
+                  <strong className="text-slate-700">Pay by credit card</strong> by calling{' '}
                   <a href="tel:7329983418" className="font-black text-indigo-700 underline decoration-indigo-300 underline-offset-2">732-998-3418</a>
-                  {' '}(we take card payment securely over the phone). You can also register here first; we open your email with your info, or copy it to the clipboard.
+                  {' '}(card over the phone). We can also open your email with your enrollment details, or copy them to the clipboard.
                 </>
               )}
             </p>
@@ -419,17 +429,21 @@ const App = () => {
               <div className="mb-8 flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3 text-xs font-bold text-emerald-950">
                 <div className="flex items-center gap-2">
                   <CreditCard size={18} className="shrink-0 text-emerald-700" />
-                  <span>Prefer to pay by card right away?</span>
+                  <span>Pay by card over the phone</span>
                 </div>
                 <a href="tel:7329983418" className="inline-flex items-center justify-center rounded-full bg-emerald-700 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-800 transition-colors">
-                  <Phone size={14} className="mr-1.5" /> 732-998-3418 — pay by card
+                  <Phone size={14} className="mr-1.5" /> 732-998-3418
                 </a>
               </div>
             )}
             {stripeUrlForCourse && (
-              <div className="mb-8 flex items-center gap-2 rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3 text-xs font-bold text-indigo-900">
-                <CreditCard size={18} className="shrink-0 text-indigo-600" />
-                Online card checkout is connected — complete registration opens payment.
+              <div className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 rounded-xl bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 px-4 py-3 text-xs text-indigo-950">
+                <div className="flex items-start gap-2 font-bold">
+                  <CreditCard size={18} className="shrink-0 text-indigo-600 mt-0.5" />
+                  <span>
+                    <strong className="font-black">Stripe web checkout is on.</strong> After submit, your browser goes to Stripe’s hosted payment page—you pay there, not on this form.
+                  </span>
+                </div>
               </div>
             )}
             <form onSubmit={submitEnroll} className="grid sm:grid-cols-2 gap-4 max-w-2xl">
@@ -457,17 +471,24 @@ const App = () => {
                 >
                   {payRedirecting ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" /> Opening checkout…
+                      <Loader2 size={16} className="animate-spin" /> Redirecting to Stripe…
                     </>
                   ) : (
                     <>
-                      {stripeUrlForCourse ? 'Complete registration & pay by card' : 'Submit registration'}
+                      {stripeUrlForCourse ? 'Continue to Stripe to pay online' : 'Submit registration'}
                       {!stripeUrlForCourse ? <ArrowRight size={16} /> : <CreditCard size={16} />}
                     </>
                   )}
                 </button>
-                <a href="tel:7329983418" className="inline-flex items-center justify-center gap-2 border-2 border-slate-200 text-slate-800 px-6 py-3.5 rounded-full font-black text-xs uppercase tracking-widest hover:border-indigo-600 hover:text-indigo-600 transition-all">
-                  <Phone size={14} /> Pay by card — call
+                <a
+                  href="tel:7329983418"
+                  className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-black text-xs uppercase tracking-widest transition-all ${
+                    stripeUrlForCourse
+                      ? 'border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200'
+                      : 'border-2 border-slate-200 text-slate-800 hover:border-indigo-600 hover:text-indigo-600'
+                  }`}
+                >
+                  <Phone size={14} /> {stripeUrlForCourse ? 'Call us instead' : 'Pay by card — call'}
                 </a>
               </div>
             </form>
@@ -851,7 +872,7 @@ const App = () => {
                 >
                   <h2 className="text-4xl font-black tracking-tight mb-4 text-center uppercase italic">Academy <span className="text-indigo-600 text-3xl">Catalog</span></h2>
                   <p className="text-center text-slate-500 text-sm font-medium max-w-2xl mx-auto mb-10">
-                    Pick a course, review objectives, then <strong className="text-slate-700">enroll</strong> or <strong className="text-slate-700">register</strong> for the next live virtual cohort—same idea as major training marketplaces.
+                    Pick a course, review objectives, then <strong className="text-slate-700">enroll</strong>. Courses marked <strong className="text-indigo-600">Stripe · Pay online</strong> continue to Stripe’s hosted checkout after you submit the form (card, Apple Pay, Google Pay where available). Otherwise we confirm by phone or email.
                   </p>
                 </motion.div>
 
@@ -920,6 +941,9 @@ const App = () => {
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <span className="text-[8px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Live virtual</span>
                               <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400">{c.duration}</span>
+                              {paymentLinkForCourse(c) ? (
+                                <span className="text-[8px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">Stripe · Pay online</span>
+                              ) : null}
                             </div>
                             <button type="button" onClick={() => { setEnrollFromListing(false); setSelectedCourse(c); }} className="text-left w-full text-[11px] font-black text-slate-800 hover:text-indigo-600 transition-colors">
                               {c.name}
@@ -935,7 +959,7 @@ const App = () => {
                                 className="register-class w-full inline-flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-sm"
                                 onClick={() => { setEnrollFromListing(true); setSelectedCourse(c); }}
                               >
-                                Enroll
+                                {paymentLinkForCourse(c) ? 'Enroll — pay on Stripe' : 'Enroll'}
                               </button>
                               <button
                                 type="button"
