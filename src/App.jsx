@@ -9,8 +9,33 @@ import {
 
 const ENROLL_MAILTO = 'mailto:';
 
-/** Default Stripe Payment Link (Dashboard → Payment links). Per-course override on each course: stripePaymentLink */
+/** Fallback if a course has no per-course link (same price for all, or testing). */
 const defaultStripePaymentLink = () => (import.meta.env.VITE_STRIPE_PAYMENT_LINK || '').trim();
+
+/**
+ * One Stripe Payment Link per course ID — set each amount in Stripe Dashboard, paste full URL here and in Vercel.
+ * Keys match `id` on each course in `academyData`.
+ */
+const stripePaymentLinkByCourseId = {
+  'leading-safe': (import.meta.env.VITE_STRIPE_LINK_LEADING_SAFE || '').trim(),
+  'safe-po-pm': (import.meta.env.VITE_STRIPE_LINK_SAFE_PO_PM || '').trim(),
+  'safe-rte': (import.meta.env.VITE_STRIPE_LINK_SAFE_RTE || '').trim(),
+  'safe-lpm': (import.meta.env.VITE_STRIPE_LINK_SAFE_LPM || '').trim(),
+  'safe-sm': (import.meta.env.VITE_STRIPE_LINK_SAFE_SM || '').trim(),
+  'safe-devops': (import.meta.env.VITE_STRIPE_LINK_SAFE_DEVOPS || '').trim(),
+  'gen-ai-rag': (import.meta.env.VITE_STRIPE_LINK_GEN_AI_RAG || '').trim(),
+  'prompt-eng': (import.meta.env.VITE_STRIPE_LINK_PROMPT_ENG || '').trim(),
+  'ai-agents': (import.meta.env.VITE_STRIPE_LINK_AI_AGENTS || '').trim(),
+  'modern-eng': (import.meta.env.VITE_STRIPE_LINK_MODERN_ENG || '').trim(),
+  'cloud-migration': (import.meta.env.VITE_STRIPE_LINK_CLOUD_MIGRATION || '').trim(),
+  'finops': (import.meta.env.VITE_STRIPE_LINK_FINOPS || '').trim(),
+  'azure-devops': (import.meta.env.VITE_STRIPE_LINK_AZURE_DEVOPS || '').trim(),
+  'agile-scrum': (import.meta.env.VITE_STRIPE_LINK_AGILE_SCRUM || '').trim(),
+  'jira-align': (import.meta.env.VITE_STRIPE_LINK_JIRA_ALIGN || '').trim(),
+};
+
+const paymentLinkForCourse = (course) =>
+  (stripePaymentLinkByCourseId[course.id] || course.stripePaymentLink || defaultStripePaymentLink() || '').trim();
 
 const buildStripePaymentUrl = (paymentLinkBase, email) => {
   try {
@@ -34,6 +59,8 @@ const buildEnrollmentPlainText = (course, { name, email, phone, company }) =>
     `Email: ${email}`,
     `Phone: ${phone}`,
     company ? `Company: ${company}` : null,
+    ``,
+    `Payment: Pay by credit card over the phone — call 732-998-3418 (we'll confirm your seat and take card payment securely).`,
     ``,
     `Format: Live virtual (NJ cohort)`,
     `— Submitted from website registration form`,
@@ -192,7 +219,7 @@ const App = () => {
       }
     }, [scrollToEnroll, course?.id]);
 
-    const stripeUrlForCourse = (course.stripePaymentLink || defaultStripePaymentLink() || '').trim();
+    const stripeUrlForCourse = paymentLinkForCourse(course);
 
     const submitEnroll = async (e) => {
       e.preventDefault();
@@ -275,18 +302,31 @@ const App = () => {
             <p className="text-slate-500 text-sm font-medium mb-4 max-w-xl">
               {stripeUrlForCourse ? (
                 <>
-                  After you submit, you are sent to <strong className="text-slate-700">Stripe</strong> to pay securely. Use the same email here and at checkout so we can match your enrollment.
+                  After you submit, you’ll open <strong className="text-slate-700">secure checkout</strong> to pay with a credit or debit card. Use the same email here and at checkout so we can match your enrollment.
                 </>
               ) : (
                 <>
-                  Add <code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-bold text-slate-800">VITE_STRIPE_PAYMENT_LINK</code> in your <code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-bold text-slate-800">.env</code> file with your Stripe Payment Link URL, then restart the dev server—otherwise we copy your details and open your email app as a fallback.
+                  Submit your details below—we’ll confirm your seat. <strong className="text-slate-700">Pay by credit card</strong> by calling{' '}
+                  <a href="tel:7329983418" className="font-black text-indigo-700 underline decoration-indigo-300 underline-offset-2">732-998-3418</a>
+                  {' '}(we take card payment securely over the phone). You can also register here first; we open your email with your info, or copy it to the clipboard.
                 </>
               )}
             </p>
+            {!stripeUrlForCourse && (
+              <div className="mb-8 flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3 text-xs font-bold text-emerald-950">
+                <div className="flex items-center gap-2">
+                  <CreditCard size={18} className="shrink-0 text-emerald-700" />
+                  <span>Prefer to pay by card right away?</span>
+                </div>
+                <a href="tel:7329983418" className="inline-flex items-center justify-center rounded-full bg-emerald-700 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-800 transition-colors">
+                  <Phone size={14} className="mr-1.5" /> 732-998-3418 — pay by card
+                </a>
+              </div>
+            )}
             {stripeUrlForCourse && (
               <div className="mb-8 flex items-center gap-2 rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3 text-xs font-bold text-indigo-900">
                 <CreditCard size={18} className="shrink-0 text-indigo-600" />
-                Stripe checkout is connected — Complete registration opens payment.
+                Online card checkout is connected — complete registration opens payment.
               </div>
             )}
             <form onSubmit={submitEnroll} className="grid sm:grid-cols-2 gap-4 max-w-2xl">
@@ -314,31 +354,32 @@ const App = () => {
                 >
                   {payRedirecting ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" /> Opening Stripe…
+                      <Loader2 size={16} className="animate-spin" /> Opening checkout…
                     </>
                   ) : (
                     <>
-                      {stripeUrlForCourse ? 'Complete registration & pay' : 'Complete registration'}
+                      {stripeUrlForCourse ? 'Complete registration & pay by card' : 'Submit registration'}
                       {!stripeUrlForCourse ? <ArrowRight size={16} /> : <CreditCard size={16} />}
                     </>
                   )}
                 </button>
                 <a href="tel:7329983418" className="inline-flex items-center justify-center gap-2 border-2 border-slate-200 text-slate-800 px-6 py-3.5 rounded-full font-black text-xs uppercase tracking-widest hover:border-indigo-600 hover:text-indigo-600 transition-all">
-                  <Phone size={14} /> Call to enroll
+                  <Phone size={14} /> Pay by card — call
                 </a>
               </div>
             </form>
             {enrollNotice === 'no-stripe-copied' && (
-              <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-                <strong className="font-black">Stripe URL not set.</strong> Your registration text was copied to the clipboard. We also tried to open your email app—if nothing opened, paste the clipboard into an email to your team or call{' '}
-                <a href="tel:7329983418" className="font-black text-indigo-700 underline">732-998-3418</a>.
-                Set <code className="rounded bg-white/80 px-1 font-mono text-xs">VITE_STRIPE_PAYMENT_LINK</code> in <code className="rounded bg-white/80 px-1 font-mono text-xs">.env</code> to go straight to Stripe checkout.
+              <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
+                <strong className="font-black">Registration details copied.</strong> We also tried to open your email—if nothing opened, paste from the clipboard into an email to us.{' '}
+                <strong className="font-black">To pay by credit card,</strong> call{' '}
+                <a href="tel:7329983418" className="font-black text-emerald-800 underline">732-998-3418</a>.
               </div>
             )}
             {enrollNotice === 'no-stripe' && (
-              <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-                <strong className="font-black">Add your Stripe Payment Link</strong> as <code className="rounded bg-white/80 px-1 font-mono text-xs">VITE_STRIPE_PAYMENT_LINK</code> in <code className="rounded bg-white/80 px-1 font-mono text-xs">.env</code>, restart Vite, and submit again to pay on Stripe. We tried to open your email app—call{' '}
-                <a href="tel:7329983418" className="font-black text-indigo-700 underline">732-998-3418</a> if needed.
+              <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
+                <strong className="font-black">Registration sent.</strong> We tried to open your email app—if it didn’t open, call{' '}
+                <a href="tel:7329983418" className="font-black text-emerald-800 underline">732-998-3418</a>
+                {' '}to confirm and <strong className="font-black">pay by credit card</strong> over the phone.
               </div>
             )}
           </section>
