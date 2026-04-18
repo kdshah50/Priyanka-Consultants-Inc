@@ -38,13 +38,14 @@ const paymentLinkForCourse = (course) =>
   (stripePaymentLinkByCourseId[course.id] || course.stripePaymentLink || defaultStripePaymentLink() || '').trim();
 
 /** Stripe Payment Link query params — see https://stripe.com/docs/payment-links/customize */
-const buildStripePaymentUrl = (paymentLinkBase, { email, courseId }) => {
+const buildStripePaymentUrl = (paymentLinkBase, { email, courseId, cohortWeekIndex }) => {
   try {
     const u = new URL(paymentLinkBase);
     if (email) u.searchParams.set('prefilled_email', email);
     if (courseId) {
       const safe = String(courseId).replace(/[^a-zA-Z0-9_-]/g, '');
-      const ref = `pci_${safe}_${Date.now()}`.slice(0, 200);
+      const w = cohortWeekIndex !== undefined && cohortWeekIndex !== null ? `_w${cohortWeekIndex}` : '';
+      const ref = `pci_${safe}${w}_${Date.now()}`.slice(0, 200);
       u.searchParams.set('client_reference_id', ref);
     }
     return u.toString();
@@ -105,21 +106,25 @@ const catalogScheduleBlurb = (kind) => {
   return `${short(weeks[0])}; ${short(weeks[1])} · +${weeks.length - 2} more · ${COHORT.rangeLabel}`;
 };
 
-const buildSchedulePlainForEnrollment = (course) => {
-  const title = scheduleTitleForKind(course.scheduleKind);
-  const weeks = scheduleWeeksForKind(course.scheduleKind);
-  const lines = weeks.map((line, i) => `  ${i + 1}. ${line}`);
-  return [title, `Cohort window: ${COHORT.rangeLabel}`, '', ...lines].join('\n');
-};
+const buildSelectedSessionPlain = (course, selectedCohortLine) =>
+  [
+    scheduleTitleForKind(course.scheduleKind),
+    `Selected session: ${selectedCohortLine}`,
+    `Course: ${course.name}`,
+    `Detail: ${course.detail}`,
+    `Price: ${course.price}`,
+  ].join('\n');
 
-const buildEnrollmentPlainText = (course, { name, email, phone, company }) =>
+const buildEnrollmentPlainText = (course, { name, email, phone, company, selectedCohortLine }) =>
   [
     `Enrollment / payment intent — Priyanka Consultants Academy`,
     ``,
     `Course: ${course.name}`,
     `Course ID: ${course.id}`,
+    `Course detail: ${course.detail}`,
     `Listed price: ${course.price}`,
-    `Schedule:\n${buildSchedulePlainForEnrollment(course)}`,
+    `Class hours: ${scheduleTitleForKind(course.scheduleKind)}`,
+    `Selected session (confirmed): ${selectedCohortLine}`,
     ``,
     `Name: ${name}`,
     `Email: ${email}`,
@@ -134,9 +139,9 @@ const buildEnrollmentPlainText = (course, { name, email, phone, company }) =>
     .filter(Boolean)
     .join('\n');
 
-const buildEnrollmentMailto = (course, { name, email, phone, company }) => {
+const buildEnrollmentMailto = (course, payload) => {
   const subject = encodeURIComponent(`Enrollment request: ${course.name}`);
-  const body = encodeURIComponent(buildEnrollmentPlainText(course, { name, email, phone, company }));
+  const body = encodeURIComponent(buildEnrollmentPlainText(course, payload));
   return `${ENROLL_MAILTO}?subject=${subject}&body=${body}`;
 };
 
@@ -348,8 +353,20 @@ const App = () => {
   const CoursePage = ({ course, onBack, scrollToEnroll }) => {
     const enrollRef = useRef(null);
     const [enroll, setEnroll] = useState({ name: '', email: '', phone: '', company: '' });
+    const [selectedCohortIndex, setSelectedCohortIndex] = useState(null);
     const [payRedirecting, setPayRedirecting] = useState(false);
     const [enrollNotice, setEnrollNotice] = useState(null);
+
+    const cohortWeekLines = scheduleWeeksForKind(course.scheduleKind);
+    const selectedCohortLine =
+      selectedCohortIndex !== null && cohortWeekLines[selectedCohortIndex]
+        ? cohortWeekLines[selectedCohortIndex]
+        : null;
+
+    useEffect(() => {
+      setSelectedCohortIndex(null);
+      setEnrollNotice(null);
+    }, [course?.id]);
 
     useEffect(() => {
       if (scrollToEnroll && enrollRef.current) {
@@ -363,6 +380,16 @@ const App = () => {
       e.preventDefault();
       setEnrollNotice(null);
 
+      if (selectedCohortIndex === null || !selectedCohortLine) {
+        setEnrollNotice('no-cohort');
+        return;
+      }
+
+      const enrollPayload = {
+        ...enroll,
+        selectedCohortLine,
+      };
+
       if (stripeUrlForCourse) {
         setPayRedirecting(true);
         try {
@@ -371,8 +398,10 @@ const App = () => {
             JSON.stringify({
               courseId: course.id,
               courseName: course.name,
+              courseDetail: course.detail,
               price: course.price,
-              schedule: buildSchedulePlainForEnrollment(course),
+              schedule: buildSelectedSessionPlain(course, selectedCohortLine),
+              cohortWeekIndex: selectedCohortIndex,
               name: enroll.name,
               email: enroll.email,
               phone: enroll.phone,
@@ -384,12 +413,16 @@ const App = () => {
           /* ignore quota / private mode */
         }
         window.location.assign(
-          buildStripePaymentUrl(stripeUrlForCourse, { email: enroll.email, courseId: course.id })
+          buildStripePaymentUrl(stripeUrlForCourse, {
+            email: enroll.email,
+            courseId: course.id,
+            cohortWeekIndex: selectedCohortIndex,
+          })
         );
         return;
       }
 
-      const summary = buildEnrollmentPlainText(course, enroll);
+      const summary = buildEnrollmentPlainText(course, enrollPayload);
       let copied = false;
       try {
         await navigator.clipboard.writeText(summary);
@@ -397,7 +430,7 @@ const App = () => {
       } catch {
         copied = false;
       }
-      const mailto = buildEnrollmentMailto(course, enroll);
+      const mailto = buildEnrollmentMailto(course, enrollPayload);
       window.open(mailto, '_blank', 'noopener,noreferrer');
       setEnrollNotice(copied ? 'no-stripe-copied' : 'no-stripe');
     };
@@ -445,20 +478,17 @@ const App = () => {
               <div className="flex items-center gap-2 text-indigo-600 font-black text-xl"><DollarSign size={20}/> {course.price}</div>
               <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest"><Clock size={16}/> {course.duration} Session</div>
             </div>
-            <div className="max-w-2xl space-y-3">
+            <div className="max-w-2xl space-y-2">
               <p className="flex items-start gap-3 text-sm font-bold text-slate-800 leading-relaxed">
                 <Calendar className="shrink-0 text-indigo-600 mt-0.5" size={18} strokeWidth={2} />
                 <span>{scheduleTitleForKind(course.scheduleKind)}</span>
               </p>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-9">Cohort window · {COHORT.rangeLabel}</p>
-              <ul className="list-none space-y-1.5 pl-9 text-xs font-semibold text-slate-700 border-l-2 border-indigo-200 ml-[1.125rem]">
-                {scheduleWeeksForKind(course.scheduleKind).map((line, i) => (
-                  <li key={`wk-${i}`} className="pl-2">
-                    <span className="text-slate-400 font-black mr-2 tabular-nums">{i + 1}.</span>
-                    {line}
-                  </li>
-                ))}
-              </ul>
+              <p className="text-xs text-slate-600 font-medium leading-relaxed ml-9 border-l-2 border-indigo-100 pl-4">
+                <strong className="text-slate-800">Choose a specific week</strong> in the{' '}
+                <a href="#enroll" className="font-black text-indigo-600 underline underline-offset-2">registration section</a>
+                {' '}before you fill out the form or pay. You’ll confirm dates, times, and course details on screen before checkout.
+              </p>
             </div>
           </motion.div>
           <div className="grid md:grid-cols-2 gap-12 mb-16">
@@ -494,18 +524,97 @@ const App = () => {
             className="rounded-[2rem] border-2 border-indigo-100 bg-gradient-to-b from-white to-slate-50 p-8 md:p-10 shadow-lg mb-12"
           >
             <h3 className="text-xl font-black text-slate-900 uppercase italic mb-2">Register for this class</h3>
+            <p className="text-slate-500 text-sm font-medium mb-6 max-w-2xl">
+              <strong className="text-slate-800">Step 1 — Pick your session week.</strong> Step 2 — Review course, dates, and times. Step 3 — Enter your details, then{' '}
+              {stripeUrlForCourse ? (
+                <>continue to <strong className="text-slate-800">Stripe</strong> to pay. Use the <strong className="text-slate-800">same work email</strong> here and at checkout.</>
+              ) : (
+                <>submit; we’ll confirm by phone or email.</>
+              )}
+            </p>
+
+            <div id="enroll-session" className="mb-8 max-w-2xl space-y-4">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">
+                Step 1 · Select your session dates <span className="text-rose-500">(required)</span>
+                <select
+                  value={selectedCohortIndex === null ? '' : String(selectedCohortIndex)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSelectedCohortIndex(v === '' ? null : Number(v));
+                    setEnrollNotice(null);
+                  }}
+                  className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                >
+                  <option value="">Choose a week…</option>
+                  {cohortWeekLines.map((line, i) => (
+                    <option key={`opt-${i}`} value={i}>
+                      Week {i + 1}: {line.replace(/ · (Fri–Sun|Sat–Sun|Sat)$/, '')}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <details className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-xs">
+                <summary className="cursor-pointer font-black uppercase tracking-widest text-indigo-600">Or tap a week</summary>
+                <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {cohortWeekLines.map((line, i) => (
+                    <li key={`pick-${i}`}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCohortIndex(i);
+                          setEnrollNotice(null);
+                        }}
+                        className={`w-full text-left rounded-lg px-3 py-2 font-semibold transition-colors ${
+                          selectedCohortIndex === i
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-white text-slate-700 border border-slate-200 hover:border-indigo-300'
+                        }`}
+                      >
+                        <span className="font-black text-[10px] opacity-80">W{i + 1}</span> {line.replace(/ · (Fri–Sun|Sat–Sun|Sat)$/, '')}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </div>
+
+            {selectedCohortLine ? (
+              <div className="mb-8 rounded-2xl border-2 border-indigo-200 bg-white p-6 shadow-sm max-w-2xl">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-3">Step 2 · Review before checkout</p>
+                <h4 className="text-lg font-black text-slate-900 italic mb-1">{course.name}</h4>
+                <p className="text-sm text-slate-600 font-medium mb-3">{course.detail}</p>
+                <div className="flex flex-wrap gap-4 text-sm border-t border-slate-100 pt-3">
+                  <div>
+                    <span className="text-[9px] font-black uppercase text-slate-400 block">Price</span>
+                    <span className="font-black text-indigo-600 text-lg">{course.price}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black uppercase text-slate-400 block">Duration</span>
+                    <span className="font-bold text-slate-800">{course.duration}</span>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-1 text-sm">
+                  <p className="font-bold text-slate-800">{scheduleTitleForKind(course.scheduleKind)}</p>
+                  <p className="font-black text-slate-900">{selectedCohortLine}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="mb-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 font-medium max-w-2xl">
+                Select a session week above to see your full course summary here before you register or pay.
+              </div>
+            )}
+
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Step 3 · Your contact information</p>
             <p className="text-slate-500 text-sm font-medium mb-4 max-w-xl">
               {stripeUrlForCourse ? (
                 <>
-                  Submit the form, then you’ll continue to <strong className="text-slate-800">Stripe Checkout</strong> to pay online with a card (and Apple Pay / Google Pay where Stripe offers them).{' '}
-                  <strong className="text-slate-800">Use the same work email</strong> here and on Stripe so we can match your payment to this registration.
+                  After you submit, you’ll open <strong className="text-slate-800">Stripe Checkout</strong> with the session you selected above.
                 </>
               ) : (
                 <>
-                  <strong className="text-slate-800">Online checkout is not set up for this course yet.</strong> Submit your details—we’ll confirm your seat.{' '}
+                  <strong className="text-slate-800">Online checkout is not set up for this course yet.</strong> We’ll use these details to confirm your seat for the session you chose.{' '}
                   <strong className="text-slate-700">Pay by credit card</strong> by calling{' '}
-                  <a href="tel:7329983418" className="font-black text-indigo-700 underline decoration-indigo-300 underline-offset-2">732-998-3418</a>
-                  {' '}(card over the phone). We can also open your email with your enrollment details, or copy them to the clipboard.
+                  <a href="tel:7329983418" className="font-black text-indigo-700 underline decoration-indigo-300 underline-offset-2">732-998-3418</a>.
                 </>
               )}
             </p>
@@ -530,27 +639,37 @@ const App = () => {
                 </div>
               </div>
             )}
-            <form onSubmit={submitEnroll} className="grid sm:grid-cols-2 gap-4 max-w-2xl">
-              <label className="sm:col-span-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Full name
-                <input required value={enroll.name} onChange={(e) => setEnroll((p) => ({ ...p, name: e.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" placeholder="Jane Doe" />
-              </label>
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Work email
-                <input required type="email" value={enroll.email} onChange={(e) => setEnroll((p) => ({ ...p, email: e.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" placeholder="you@company.com" />
-              </label>
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Phone
-                <input required type="tel" value={enroll.phone} onChange={(e) => setEnroll((p) => ({ ...p, phone: e.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" placeholder="+1 …" />
-              </label>
-              <label className="sm:col-span-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Company <span className="font-bold text-slate-300 normal-case">(optional)</span>
-                <input value={enroll.company} onChange={(e) => setEnroll((p) => ({ ...p, company: e.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" placeholder="Organization" />
-              </label>
-              <div className="sm:col-span-2 flex flex-wrap gap-3 pt-2">
+            {enrollNotice === 'no-cohort' && (
+              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-900 max-w-2xl">
+                Select a session week in Step 1 before registering or paying.
+              </div>
+            )}
+            <form onSubmit={submitEnroll} className="max-w-2xl">
+              <fieldset
+                disabled={selectedCohortIndex === null}
+                className="grid sm:grid-cols-2 gap-4 border-0 p-0 m-0 min-w-0 disabled:opacity-50 disabled:[&_input]:cursor-not-allowed"
+              >
+                <label className="sm:col-span-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  Full name
+                  <input required value={enroll.name} onChange={(e) => setEnroll((p) => ({ ...p, name: e.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" placeholder="Jane Doe" />
+                </label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  Work email
+                  <input required type="email" value={enroll.email} onChange={(e) => setEnroll((p) => ({ ...p, email: e.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" placeholder="you@company.com" />
+                </label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  Phone
+                  <input required type="tel" value={enroll.phone} onChange={(e) => setEnroll((p) => ({ ...p, phone: e.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" placeholder="+1 …" />
+                </label>
+                <label className="sm:col-span-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  Company <span className="font-bold text-slate-300 normal-case">(optional)</span>
+                  <input value={enroll.company} onChange={(e) => setEnroll((p) => ({ ...p, company: e.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" placeholder="Organization" />
+                </label>
+              </fieldset>
+              <div className="flex flex-wrap gap-3 pt-2">
                 <button
                   type="submit"
-                  disabled={payRedirecting}
+                  disabled={payRedirecting || selectedCohortIndex === null}
                   className="register-class inline-flex items-center justify-center gap-2 bg-indigo-600 text-white px-8 py-3.5 rounded-full font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md disabled:opacity-70 disabled:pointer-events-none"
                 >
                   {payRedirecting ? (
