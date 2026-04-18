@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { 
   Shield, Zap, CheckCircle, Phone, ArrowRight, Globe, 
   BrainCircuit, Workflow, Activity, Sparkles, Rocket,
@@ -74,15 +74,47 @@ const buildEnrollmentMailto = (course, { name, email, phone, company }) => {
   return `${ENROLL_MAILTO}?subject=${subject}&body=${body}`;
 };
 
+const EASE_PREMIUM = [0.16, 1, 0.3, 1];
+const VIEWPORT = { once: true, margin: '-48px', amount: 0.15 };
+
 const App = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [enrollFromListing, setEnrollFromListing] = useState(false);
+  const reduceMotion = useReducedMotion();
+
+  const tr = (duration = 0.5, delay = 0) => ({
+    duration: reduceMotion ? 0 : duration,
+    delay: reduceMotion ? 0 : delay,
+    ease: EASE_PREMIUM,
+  });
 
   const fadeIn = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
     exit: { opacity: 0, y: -20 },
-    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] }
+    transition: tr(0.5),
+  };
+
+  const staggerContainer = (stagger = 0.07) => ({
+    hidden: {},
+    show: {
+      transition: { staggerChildren: reduceMotion ? 0 : stagger, delayChildren: reduceMotion ? 0 : 0.12 },
+    },
+  });
+
+  const fadeUp = {
+    hidden: { opacity: 0, y: reduceMotion ? 0 : 28 },
+    show: { opacity: 1, y: 0, transition: tr(0.55) },
+  };
+
+  const fadeUpSm = {
+    hidden: { opacity: 0, y: reduceMotion ? 0 : 16 },
+    show: { opacity: 1, y: 0, transition: tr(0.45) },
+  };
+
+  const scaleIn = {
+    hidden: { opacity: 0, scale: reduceMotion ? 1 : 0.94 },
+    show: { opacity: 1, scale: 1, transition: tr(0.5) },
   };
 
   const academyData = {
@@ -262,42 +294,79 @@ const App = () => {
     };
 
     return (
-      <motion.div {...fadeIn} className="min-h-screen bg-white pt-32 pb-20 px-6">
+      <motion.div {...fadeIn} className="min-h-screen bg-white pt-32 pb-20 px-6 overflow-hidden">
         <div className="max-w-4xl mx-auto">
-          <button type="button" onClick={onBack} className="flex items-center gap-2 text-indigo-600 font-bold uppercase text-[10px] tracking-widest mb-12 hover:gap-4 transition-all">
+          <motion.button
+            type="button"
+            onClick={onBack}
+            whileHover={reduceMotion ? {} : { x: -4 }}
+            whileTap={reduceMotion ? {} : { scale: 0.98 }}
+            className="flex items-center gap-2 text-indigo-600 font-bold uppercase text-[10px] tracking-widest mb-12 hover:gap-4 transition-all"
+          >
             <ChevronLeft size={16} /> Back to Academy
-          </button>
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-800 px-3 py-1 text-[9px] font-black uppercase tracking-widest border border-emerald-200">
+          </motion.button>
+          <motion.div
+            className="flex flex-wrap items-center gap-2 mb-4"
+            initial="hidden"
+            animate="show"
+            variants={staggerContainer(0.06)}
+          >
+            <motion.span variants={fadeUpSm} className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-800 px-3 py-1 text-[9px] font-black uppercase tracking-widest border border-emerald-200">
               <Video size={12} className="shrink-0" /> Live virtual
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 text-slate-600 px-3 py-1 text-[9px] font-bold uppercase tracking-widest">
+            </motion.span>
+            <motion.span variants={fadeUpSm} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 text-slate-600 px-3 py-1 text-[9px] font-bold uppercase tracking-widest">
               <Calendar size={12} /> Request upcoming dates
-            </span>
-          </div>
-          <h1 className="text-5xl font-black tracking-tight text-slate-900 mb-4 italic leading-none">{course.name}</h1>
-          <div className="flex flex-wrap items-center gap-6 mb-12 border-b border-slate-100 pb-8">
+            </motion.span>
+          </motion.div>
+          <motion.h1
+            className="text-5xl font-black tracking-tight text-slate-900 mb-4 italic leading-none"
+            initial={{ opacity: 0, y: reduceMotion ? 0 : 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={tr(0.55, 0.05)}
+          >
+            {course.name}
+          </motion.h1>
+          <motion.div
+            className="flex flex-wrap items-center gap-6 mb-12 border-b border-slate-100 pb-8"
+            initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={tr(0.45, 0.12)}
+          >
             <div className="flex items-center gap-2 text-indigo-600 font-black text-xl"><DollarSign size={20}/> {course.price}</div>
             <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest"><Clock size={16}/> {course.duration} Session</div>
-          </div>
+          </motion.div>
           <div className="grid md:grid-cols-2 gap-12 mb-16">
-            <section>
-              <h2 className="text-xl font-black text-slate-900 uppercase italic border-b-2 border-indigo-600 inline-block mb-6">Target Audience</h2>
-              <p className="text-slate-600 text-sm font-medium leading-relaxed">{course.audience}</p>
-            </section>
-            <section>
-              <h2 className="text-xl font-black text-slate-900 uppercase italic border-b-2 border-indigo-600 inline-block mb-6">Learning Objectives</h2>
+            <motion.section initial="hidden" whileInView="show" viewport={VIEWPORT} variants={staggerContainer(0.08)}>
+              <motion.h2 variants={fadeUp} className="text-xl font-black text-slate-900 uppercase italic border-b-2 border-indigo-600 inline-block mb-6">Target Audience</motion.h2>
+              <motion.p variants={fadeUp} className="text-slate-600 text-sm font-medium leading-relaxed">{course.audience}</motion.p>
+            </motion.section>
+            <motion.section initial="hidden" whileInView="show" viewport={VIEWPORT} variants={staggerContainer(0.05)}>
+              <motion.h2 variants={fadeUpSm} className="text-xl font-black text-slate-900 uppercase italic border-b-2 border-indigo-600 inline-block mb-6">Learning Objectives</motion.h2>
               <ul className="space-y-3">
                 {course.requirements.map((r, i) => (
-                  <li key={`req-${i}`} className="flex gap-3 text-xs font-bold text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <motion.li
+                    key={`req-${i}`}
+                    variants={fadeUpSm}
+                    custom={i}
+                    whileHover={reduceMotion ? {} : { scale: 1.01, borderColor: 'rgba(99, 102, 241, 0.35)' }}
+                    className="flex gap-3 text-xs font-bold text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100 transition-colors"
+                  >
                     <CheckCircle className="text-indigo-600 shrink-0" size={14}/> {r}
-                  </li>
+                  </motion.li>
                 ))}
               </ul>
-            </section>
+            </motion.section>
           </div>
 
-          <section id="enroll" ref={enrollRef} className="rounded-[2rem] border-2 border-indigo-100 bg-gradient-to-b from-white to-slate-50 p-8 md:p-10 shadow-lg mb-12">
+          <motion.section
+            id="enroll"
+            ref={enrollRef}
+            initial={{ opacity: 0, y: reduceMotion ? 0 : 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={VIEWPORT}
+            transition={tr(0.55)}
+            className="rounded-[2rem] border-2 border-indigo-100 bg-gradient-to-b from-white to-slate-50 p-8 md:p-10 shadow-lg mb-12"
+          >
             <h3 className="text-xl font-black text-slate-900 uppercase italic mb-2">Register for this class</h3>
             <p className="text-slate-500 text-sm font-medium mb-4 max-w-xl">
               {stripeUrlForCourse ? (
@@ -382,15 +451,31 @@ const App = () => {
                 {' '}to confirm and <strong className="font-black">pay by credit card</strong> over the phone.
               </div>
             )}
-          </section>
+          </motion.section>
 
-          <section className="bg-slate-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden mb-12 text-center md:text-left">
-            <h3 className="text-xl font-black mb-4 uppercase italic">Prefer a quick call?</h3>
-            <p className="text-slate-400 mb-8 max-w-xl text-sm leading-relaxed font-medium italic">Join our next elite virtual cohort based in New Jersey. Expert-led training for modern professionals.</p>
-            <a href="tel:7329983418" className="inline-flex items-center gap-3 bg-white text-slate-900 px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest hover:bg-indigo-100 transition-all shadow-xl">
+          <motion.section
+            initial={{ opacity: 0, y: reduceMotion ? 0 : 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={VIEWPORT}
+            transition={tr(0.5)}
+            className="bg-slate-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden mb-12 text-center md:text-left"
+          >
+            <motion.div
+              className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-indigo-500/20 blur-3xl"
+              animate={reduceMotion ? {} : { scale: [1, 1.15, 1], opacity: [0.4, 0.65, 0.4] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <h3 className="text-xl font-black mb-4 uppercase italic relative z-10">Prefer a quick call?</h3>
+            <p className="text-slate-400 mb-8 max-w-xl text-sm leading-relaxed font-medium italic relative z-10">Join our next elite virtual cohort based in New Jersey. Expert-led training for modern professionals.</p>
+            <motion.a
+              href="tel:7329983418"
+              whileHover={reduceMotion ? {} : { scale: 1.03 }}
+              whileTap={reduceMotion ? {} : { scale: 0.98 }}
+              className="relative z-10 inline-flex items-center gap-3 bg-white text-slate-900 px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest hover:bg-indigo-100 transition-colors shadow-xl"
+            >
               732-998-3418 <ArrowRight size={18} />
-            </a>
-          </section>
+            </motion.a>
+          </motion.section>
           <footer className="pt-10 border-t border-slate-100 text-center">
             <p className="text-[9px] font-black uppercase tracking-[0.5em] text-slate-300">
               This course curriculum and proprietary delivery methodology are properties of Priyanka Consultants, Inc.
@@ -414,48 +499,113 @@ const App = () => {
         ) : (
           <motion.div key="main" {...fadeIn}>
             {/* NAVIGATION */}
-            <nav className="fixed w-full z-50 bg-white/70 backdrop-blur-2xl border-b border-indigo-500/10 h-16 flex items-center">
+            <motion.nav
+              initial={{ y: reduceMotion ? 0 : -24, opacity: reduceMotion ? 1 : 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={tr(0.55)}
+              className="fixed w-full z-50 bg-white/70 backdrop-blur-2xl border-b border-indigo-500/10 h-16 flex items-center"
+            >
               <div className="max-w-7xl mx-auto px-6 w-full flex justify-between items-center">
-                <div className="flex flex-col cursor-pointer" onClick={() => window.scrollTo(0,0)}>
+                <motion.div
+                  className="flex flex-col cursor-pointer"
+                  onClick={() => window.scrollTo(0, 0)}
+                  whileHover={reduceMotion ? {} : { scale: 1.02 }}
+                  whileTap={reduceMotion ? {} : { scale: 0.98 }}
+                >
                   <span className="text-xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-fuchsia-600 italic uppercase">Priyanka</span>
                   <span className="text-[8px] font-bold tracking-[0.4em] text-slate-900 uppercase">Consultants, Inc.</span>
-                </div>
+                </motion.div>
                 <div className="hidden lg:flex items-center gap-8 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                  <a href="#services" className="hover:text-fuchsia-600 transition-colors">Services</a>
-                  <a href="#compliance" className="hover:text-amber-600 transition-colors">Compliance</a>
-                  <a href="#approach" className="hover:text-indigo-600 transition-all">Approach</a>
-                  <a href="#trainings" className="hover:text-emerald-600 transition-all font-black text-indigo-600">Academy</a>
-                  <a href="tel:7329983418" className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-full hover:bg-indigo-600 transition-all shadow-lg">
+                  <motion.a href="#services" whileHover={reduceMotion ? {} : { y: -2 }} className="hover:text-fuchsia-600 transition-colors">Services</motion.a>
+                  <motion.a href="#compliance" whileHover={reduceMotion ? {} : { y: -2 }} className="hover:text-amber-600 transition-colors">Compliance</motion.a>
+                  <motion.a href="#approach" whileHover={reduceMotion ? {} : { y: -2 }} className="hover:text-indigo-600 transition-all">Approach</motion.a>
+                  <motion.a href="#trainings" whileHover={reduceMotion ? {} : { y: -2 }} className="hover:text-emerald-600 transition-all font-black text-indigo-600">Academy</motion.a>
+                  <motion.a
+                    href="tel:7329983418"
+                    whileHover={reduceMotion ? {} : { scale: 1.04 }}
+                    whileTap={reduceMotion ? {} : { scale: 0.98 }}
+                    className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-full hover:bg-indigo-600 transition-colors shadow-lg"
+                  >
                     <Phone size={12} /> 732-998-3418
-                  </a>
+                  </motion.a>
                 </div>
               </div>
-            </nav>
+            </motion.nav>
 
             {/* HERO */}
             <section className="relative pt-40 pb-32 px-6 bg-slate-950 overflow-hidden text-center text-white">
-              <div className="max-w-5xl mx-auto relative z-10">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white mb-8">
-                  <Sparkles size={12} className="text-fuchsia-400" />
+              {!reduceMotion && (
+                <>
+                  <motion.div
+                    className="pointer-events-none absolute -left-32 top-20 h-[420px] w-[420px] rounded-full bg-indigo-600/25 blur-[100px]"
+                    animate={{ scale: [1, 1.12, 1], opacity: [0.35, 0.55, 0.35] }}
+                    transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                  <motion.div
+                    className="pointer-events-none absolute -right-24 bottom-10 h-[380px] w-[380px] rounded-full bg-fuchsia-600/20 blur-[90px]"
+                    animate={{ scale: [1, 1.08, 1], opacity: [0.3, 0.5, 0.3] }}
+                    transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                  />
+                  <motion.div
+                    className="pointer-events-none absolute left-1/2 top-1/2 h-[min(90vw,600px)] w-[min(90vw,600px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.06]"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 120, repeat: Infinity, ease: 'linear' }}
+                  />
+                </>
+              )}
+              <motion.div
+                className="max-w-5xl mx-auto relative z-10"
+                initial="hidden"
+                animate="show"
+                variants={staggerContainer(0.1)}
+              >
+                <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white mb-8">
+                  <motion.span
+                    animate={reduceMotion ? {} : { rotate: [0, 12, -8, 0] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    <Sparkles size={12} className="text-fuchsia-400" />
+                  </motion.span>
                   <span className="text-[9px] font-bold uppercase tracking-[0.3em]">The New Standard in Advisory</span>
-                </div>
-                <h1 className="text-5xl md:text-7xl font-black mb-8 tracking-tight leading-tight uppercase italic">
+                </motion.div>
+                <motion.h1 variants={fadeUp} className="text-5xl md:text-7xl font-black mb-8 tracking-tight leading-tight uppercase italic">
                   Scale <span className="text-indigo-400">Faster.</span> Build <span className="text-fuchsia-500">Smarter.</span>
-                </h1>
-                <p className="text-lg text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+                </motion.h1>
+                <motion.p variants={fadeUp} className="text-lg text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
                   Architecting <span className="text-white font-semibold">Agile Value Streams</span>, <span className="text-white font-semibold">DevSecOps Pipelines</span>, and <span className="text-white font-semibold">Agentic AI Models</span>.
-                </p>
-                <a href="#trainings" className="inline-flex items-center gap-3 bg-white text-slate-950 px-8 py-4 rounded-2xl font-black hover:bg-fuchsia-500 hover:text-white transition-all shadow-xl">
-                  Access Catalog <Rocket size={20} />
-                </a>
-              </div>
+                </motion.p>
+                <motion.div variants={fadeUp}>
+                  <motion.a
+                    href="#trainings"
+                    whileHover={reduceMotion ? {} : { scale: 1.03, boxShadow: '0 20px 40px -12px rgba(168, 85, 247, 0.45)' }}
+                    whileTap={reduceMotion ? {} : { scale: 0.98 }}
+                    className="inline-flex items-center gap-3 bg-white text-slate-950 px-8 py-4 rounded-2xl font-black hover:bg-fuchsia-500 hover:text-white transition-colors shadow-xl"
+                  >
+                    Access Catalog <Rocket size={20} />
+                  </motion.a>
+                </motion.div>
+              </motion.div>
             </section>
 
             {/* ADVISORY SERVICES */}
-            <section id="services" className="py-24 px-6 bg-white border-b border-slate-100">
+            <motion.section id="services" className="py-24 px-6 bg-white border-b border-slate-100">
               <div className="max-w-7xl mx-auto text-center">
-                <h2 className="text-4xl font-black tracking-tight text-slate-900 uppercase italic mb-16 underline decoration-indigo-500 underline-offset-8">Advisory Services</h2>
-                <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-3">
+                <motion.h2
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={VIEWPORT}
+                  transition={tr(0.55)}
+                  className="text-4xl font-black tracking-tight text-slate-900 uppercase italic mb-16 underline decoration-indigo-500 underline-offset-8"
+                >
+                  Advisory Services
+                </motion.h2>
+                <motion.div
+                  className="grid md:grid-cols-2 lg:grid-cols-5 gap-3"
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={VIEWPORT}
+                  variants={staggerContainer(0.08)}
+                >
                   {[
                     { c: "bg-indigo-600", i: <Workflow />, t: "Agile & VSM", b: ["Value Stream Mgt", "OKR Alignment", "Agile Transformation"] },
                     { c: "bg-fuchsia-600", i: <Sparkles />, t: "AI Enablement", b: ["Opportunity Mapping", "AI Leadership", "Rapid Prototyping"] },
@@ -463,8 +613,13 @@ const App = () => {
                     { c: "bg-emerald-600", i: <Shield />, t: "DevSecOps", b: ["Security Left-Shift", "Cloud Resilience", "SRE Performance"] },
                     { c: "bg-amber-600", i: <Gavel />, t: "Gov & Risk", b: ["Compliance Audits", "Ethics Framework", "Data Sovereignty"] }
                   ].map((p, i) => (
-                    <div key={`pillar-${i}`} className={`p-6 rounded-[2rem] ${p.c} text-white shadow-lg text-left`}>
-                      <div className="mb-4 opacity-70">{p.i}</div>
+                    <motion.div
+                      key={`pillar-${i}`}
+                      variants={scaleIn}
+                      whileHover={reduceMotion ? {} : { y: -6, transition: { duration: 0.25 } }}
+                      className={`p-6 rounded-[2rem] ${p.c} text-white shadow-lg text-left will-change-transform`}
+                    >
+                      <motion.div className="mb-4 opacity-70" whileHover={reduceMotion ? {} : { scale: 1.08, rotate: -3 }}>{p.i}</motion.div>
                       <h3 className="text-sm font-black mb-4 tracking-tighter uppercase italic">{p.t}</h3>
                       <div className="space-y-4">
                         {p.b.map((bullet, j) => (
@@ -473,30 +628,54 @@ const App = () => {
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </div>
-            </section>
+            </motion.section>
 
             {/* COMPLIANCE SECTION */}
-            <section id="compliance" className="py-24 px-6 bg-slate-950 text-white">
-              <div className="max-w-7xl mx-auto">
-                <div className="text-center mb-16">
+            <motion.section id="compliance" className="py-24 px-6 bg-slate-950 text-white relative overflow-hidden">
+              {!reduceMotion && (
+                <motion.div
+                  className="pointer-events-none absolute left-1/2 top-0 h-64 w-[120%] -translate-x-1/2 bg-gradient-to-b from-indigo-600/15 to-transparent"
+                  animate={{ opacity: [0.5, 0.85, 0.5] }}
+                  transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              )}
+              <div className="max-w-7xl mx-auto relative z-10">
+                <motion.div
+                  className="text-center mb-16"
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={VIEWPORT}
+                  transition={tr(0.5)}
+                >
                   <h2 className="text-4xl font-black tracking-tight uppercase italic mb-4">
                     Regulatory <span className="text-indigo-500">Guardrails</span>
                   </h2>
                   <p className="text-slate-400 text-sm font-medium tracking-widest uppercase italic">Certified Excellence in Every Deployment</p>
-                </div>
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                </motion.div>
+                <motion.div
+                  className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={VIEWPORT}
+                  variants={staggerContainer(0.1)}
+                >
                   {[
                     { title: "ISO 42001 & 27001", subtitle: "AI & Information Security", icon: <Shield className="text-indigo-400" />, points: ["AIMS Management", "Risk Assessment", "Annex A Controls"] },
                     { title: "HIPAA Compliance", subtitle: "Health Tech Governance", icon: <Activity className="text-emerald-400" />, points: ["Business Associate Agreements", "ePHI Safeguards", "Admin Security"] },
                     { title: "GDPR & CCPA MASTER", subtitle: "Global Data Privacy", icon: <Globe className="text-fuchsia-400" />, points: ["Data Residency", "Privacy by Design", "Consent Management"] },
                     { title: "Financial (SEC/SOX)", subtitle: "US Regulatory Standards", icon: <Scale className="text-amber-400" />, points: ["FINRA Record-keeping", "AML/KYC Automation", "SOX 404 Controls"] }
                   ].map((item, i) => (
-                    <div key={`comp-${i}`} className="p-8 rounded-[2.5rem] bg-white/5 border border-white/10 hover:border-indigo-500/50 transition-all group">
-                      <div className="mb-6 group-hover:scale-110 transition-transform">{item.icon}</div>
+                    <motion.div
+                      key={`comp-${i}`}
+                      variants={fadeUp}
+                      whileHover={reduceMotion ? {} : { y: -8, borderColor: 'rgba(99, 102, 241, 0.45)' }}
+                      className="p-8 rounded-[2.5rem] bg-white/5 border border-white/10 hover:border-indigo-500/50 transition-colors group"
+                    >
+                      <motion.div className="mb-6" whileHover={reduceMotion ? {} : { scale: 1.12, rotate: 5 }} transition={{ type: 'spring', stiffness: 400, damping: 15 }}>{item.icon}</motion.div>
                       <h3 className="text-lg font-black uppercase italic mb-1 leading-tight">{item.title}</h3>
                       <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-6">{item.subtitle}</p>
                       <ul className="space-y-3">
@@ -506,17 +685,31 @@ const App = () => {
                           </li>
                         ))}
                       </ul>
-                    </div>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </div>
-            </section>
+            </motion.section>
 
             {/* TECH STACK */}
-            <section id="tech" className="py-24 px-6 bg-slate-900 text-white">
+            <motion.section id="tech" className="py-24 px-6 bg-slate-900 text-white">
               <div className="max-w-7xl mx-auto text-center">
-                <h2 className="text-3xl font-black tracking-tight mb-16 uppercase italic underline decoration-cyan-500 underline-offset-8">Enterprise Tech Stack</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6">
+                <motion.h2
+                  initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.96 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={VIEWPORT}
+                  transition={tr(0.5)}
+                  className="text-3xl font-black tracking-tight mb-16 uppercase italic underline decoration-cyan-500 underline-offset-8"
+                >
+                  Enterprise Tech Stack
+                </motion.h2>
+                <motion.div
+                  className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6"
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={VIEWPORT}
+                  variants={staggerContainer(0.06)}
+                >
                   {[
                     { n: "Docker", i: <Box />, c: "text-blue-400" },
                     { n: "Kubernetes", i: <Layers />, c: "text-blue-500" },
@@ -526,28 +719,63 @@ const App = () => {
                     { n: "Azure", i: <Globe />, c: "text-cyan-400" },
                     { n: "Jenkins", i: <Activity />, c: "text-red-400" }
                   ].map((t, i) => (
-                    <div key={`tech-${i}`} className="flex flex-col items-center p-6 rounded-2xl bg-white/5 border border-white/10 group hover:bg-white/10 transition-all">
-                      <div className={`${t.c} mb-3 group-hover:scale-110 transition-transform`}>{t.i}</div>
+                    <motion.div
+                      key={`tech-${i}`}
+                      variants={fadeUpSm}
+                      whileHover={reduceMotion ? {} : { y: -6, backgroundColor: 'rgba(255,255,255,0.08)' }}
+                      className="flex flex-col items-center p-6 rounded-2xl bg-white/5 border border-white/10 group hover:bg-white/10 transition-colors"
+                    >
+                      <motion.div
+                        className={`${t.c} mb-3`}
+                        animate={reduceMotion ? {} : { y: [0, -4, 0] }}
+                        transition={{ duration: 3 + i * 0.2, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
+                      >
+                        {t.i}
+                      </motion.div>
                       <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t.n}</span>
-                    </div>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </div>
-            </section>
+            </motion.section>
 
             {/* ACADEMY */}
-            <section id="trainings" className="py-24 px-6 bg-slate-50">
+            <motion.section id="trainings" className="py-24 px-6 bg-slate-50">
               <div className="max-w-7xl mx-auto">
-                <h2 className="text-4xl font-black tracking-tight mb-4 text-center uppercase italic">Academy <span className="text-indigo-600 text-3xl">Catalog</span></h2>
-                <p className="text-center text-slate-500 text-sm font-medium max-w-2xl mx-auto mb-10">
-                  Pick a course, review objectives, then <strong className="text-slate-700">enroll</strong> or <strong className="text-slate-700">register</strong> for the next live virtual cohort—same idea as major training marketplaces.
-                </p>
+                <motion.div
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={VIEWPORT}
+                  transition={tr(0.5)}
+                >
+                  <h2 className="text-4xl font-black tracking-tight mb-4 text-center uppercase italic">Academy <span className="text-indigo-600 text-3xl">Catalog</span></h2>
+                  <p className="text-center text-slate-500 text-sm font-medium max-w-2xl mx-auto mb-10">
+                    Pick a course, review objectives, then <strong className="text-slate-700">enroll</strong> or <strong className="text-slate-700">register</strong> for the next live virtual cohort—same idea as major training marketplaces.
+                  </p>
+                </motion.div>
 
-                <div className="mb-14 rounded-[2rem] bg-slate-900 text-white p-8 md:p-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6 border border-indigo-500/20 shadow-xl">
-                  <div className="flex items-start gap-4">
-                    <div className="rounded-2xl bg-indigo-600/30 p-3 border border-indigo-400/30">
+                <motion.div
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={VIEWPORT}
+                  transition={tr(0.55, 0.05)}
+                  className="mb-14 rounded-[2rem] bg-slate-900 text-white p-8 md:p-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6 border border-indigo-500/20 shadow-xl relative overflow-hidden"
+                >
+                  {!reduceMotion && (
+                    <motion.div
+                      className="pointer-events-none absolute -right-20 -bottom-20 h-56 w-56 rounded-full bg-indigo-500/25 blur-3xl"
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.7, 0.4] }}
+                      transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                  )}
+                  <div className="flex items-start gap-4 relative z-10">
+                    <motion.div
+                      className="rounded-2xl bg-indigo-600/30 p-3 border border-indigo-400/30"
+                      animate={reduceMotion ? {} : { boxShadow: ['0 0 0 0 rgba(99,102,241,0.35)', '0 0 0 12px rgba(99,102,241,0)', '0 0 0 0 rgba(99,102,241,0.35)'] }}
+                      transition={{ duration: 2.8, repeat: Infinity, ease: 'easeOut' }}
+                    >
                       <Calendar className="text-indigo-300" size={28} />
-                    </div>
+                    </motion.div>
                     <div>
                       <h3 className="text-lg font-black uppercase italic tracking-tight mb-1">Training schedule</h3>
                       <p className="text-slate-400 text-sm font-medium max-w-xl">
@@ -555,10 +783,15 @@ const App = () => {
                       </p>
                     </div>
                   </div>
-                  <a href="#catalog-grid" className="shrink-0 inline-flex items-center justify-center gap-2 bg-white text-slate-900 px-6 py-3.5 rounded-full font-black text-xs uppercase tracking-widest hover:bg-indigo-100 transition-all">
+                  <motion.a
+                    href="#catalog-grid"
+                    whileHover={reduceMotion ? {} : { scale: 1.04 }}
+                    whileTap={reduceMotion ? {} : { scale: 0.98 }}
+                    className="relative z-10 shrink-0 inline-flex items-center justify-center gap-2 bg-white text-slate-900 px-6 py-3.5 rounded-full font-black text-xs uppercase tracking-widest hover:bg-indigo-100 transition-colors"
+                  >
                     Browse schedules <ArrowRight size={16} />
-                  </a>
-                </div>
+                  </motion.a>
+                </motion.div>
 
                 <div id="catalog-grid" className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {Object.entries({ 
@@ -567,11 +800,22 @@ const App = () => {
                     "Cloud Infra": academyData.cloud, 
                     "Agile Mastery": academyData.mastery 
                   }).map(([name, courses], idx) => (
-                    <div key={`cat-${idx}`} className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                    <motion.div
+                      key={`cat-${idx}`}
+                      initial={{ opacity: 0, y: reduceMotion ? 0 : 28 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={VIEWPORT}
+                      transition={tr(0.45, idx * 0.08)}
+                      className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-200 shadow-sm"
+                    >
                       <h3 className="text-lg font-black mb-6 text-slate-900 uppercase italic tracking-tight border-b border-slate-200 pb-2">{name}</h3>
                       <ul className="space-y-4">
                         {courses.map((c) => (
-                          <li key={c.id} className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 hover:border-indigo-200 hover:bg-white transition-all">
+                          <motion.li
+                            key={c.id}
+                            whileHover={reduceMotion ? {} : { y: -3 }}
+                            className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 hover:border-indigo-200 hover:bg-white transition-colors"
+                          >
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <span className="text-[8px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Live virtual</span>
                               <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400">{c.duration}</span>
@@ -600,74 +844,121 @@ const App = () => {
                                 View course details
                               </button>
                             </div>
-                          </li>
+                          </motion.li>
                         ))}
                       </ul>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </div>
-            </section>
+            </motion.section>
 
             {/* PERFORMANCE SHIFT GRID */}
-            <section id="approach" className="py-24 px-6 bg-white">
-              <div className="max-w-5xl mx-auto text-center mb-16">
+            <motion.section id="approach" className="py-24 px-6 bg-white overflow-hidden">
+              <motion.div
+                className="max-w-5xl mx-auto text-center mb-16"
+                initial={{ opacity: 0, y: reduceMotion ? 0 : 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={VIEWPORT}
+                transition={tr(0.5)}
+              >
                 <h2 className="text-3xl font-black tracking-tight mb-3 italic uppercase text-slate-900">The Performance Shift</h2>
                 <p className="text-indigo-600 text-xs font-bold tracking-widest uppercase">Methodology Framework</p>
-              </div>
-              
+              </motion.div>
+
               <div className="max-w-4xl mx-auto">
-                {/* Headers */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 hidden md:grid">
                   <div className="px-6 text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Pillar</div>
                   <div className="text-center font-black text-[11px] uppercase tracking-[0.2em] text-slate-500">Traditional Approach</div>
                   <div className="text-center font-black text-[11px] uppercase tracking-[0.2em] text-indigo-600 italic">Our Approach</div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
+                <div className="flex flex-col gap-3">
                   {[
                     { f: "Agile Delivery", l: "Velocity & Points", o: "Flow Efficiency & TTM", color: "bg-cyan-500", border: "border-cyan-500/20" },
                     { f: "Alignment", l: "Annual Planning", o: "Dynamic OKRs & VSM", color: "bg-indigo-600", border: "border-indigo-600/20" },
                     { f: "AI Strategy", l: "Ad-hoc Chatbots", o: "Secure AIOM & Agents", color: "bg-fuchsia-600", border: "border-fuchsia-600/20" },
                     { f: "Security", l: "Periodic Audits", o: "Automated DevSecOps", color: "bg-emerald-600", border: "border-emerald-600/20" }
                   ].map((row, i) => (
-                    <React.Fragment key={`row-${i}`}>
-                      {/* Domain Column */}
+                    <motion.div
+                      key={`row-${row.f}`}
+                      initial={{ opacity: 0, y: reduceMotion ? 0 : 24, x: reduceMotion ? 0 : i % 2 === 0 ? -12 : 12 }}
+                      whileInView={{ opacity: 1, y: 0, x: 0 }}
+                      viewport={VIEWPORT}
+                      transition={tr(0.5, i * 0.07)}
+                      className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch"
+                    >
                       <div className="group bg-slate-50 p-6 rounded-2xl border border-slate-200 flex items-center gap-3 transition-all hover:bg-white hover:shadow-md">
-                        <div className={`w-2.5 h-2.5 rounded-full ${row.color} shadow-sm`}></div>
+                        <motion.div
+                          className={`w-2.5 h-2.5 rounded-full ${row.color} shadow-sm`}
+                          animate={reduceMotion ? {} : { scale: [1, 1.25, 1] }}
+                          transition={{ duration: 2.2, repeat: Infinity, delay: i * 0.2, ease: 'easeInOut' }}
+                        />
                         <div className="font-black text-[11px] uppercase italic tracking-tight text-slate-800">{row.f}</div>
                       </div>
-                      
-                      {/* Traditional Column - Improved Contrast + Hover */}
+
                       <div className="group/trad bg-slate-50 p-6 rounded-2xl border border-slate-200 text-slate-600 text-[10px] font-bold italic text-center flex flex-col justify-center leading-tight transition-all hover:bg-white hover:text-slate-900 hover:shadow-lg hover:border-slate-300">
                         <span className="md:hidden block text-[8px] text-slate-400 mb-2 tracking-widest font-black">TRADITIONAL</span>
                         {row.l}
                       </div>
-                      
-                      {/* Our Approach Column */}
-                      <div className={`${row.color} p-6 rounded-2xl text-white font-black text-[11px] shadow-md italic text-center flex flex-col justify-center leading-tight transition-all hover:scale-[1.02] hover:shadow-xl`}>
+
+                      <motion.div
+                        whileHover={reduceMotion ? {} : { scale: 1.02 }}
+                        className={`${row.color} p-6 rounded-2xl text-white font-black text-[11px] shadow-md italic text-center flex flex-col justify-center leading-tight transition-shadow hover:shadow-xl`}
+                      >
                         <span className="md:hidden block text-[8px] opacity-70 mb-2 uppercase tracking-widest">OUR APPROACH</span>
                         {row.o}
-                      </div>
-                    </React.Fragment>
+                      </motion.div>
+                    </motion.div>
                   ))}
                 </div>
               </div>
-            </section>
+            </motion.section>
 
             {/* FOOTER */}
-            <footer className="py-20 bg-slate-950 text-white px-6">
-              <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center opacity-80">
-                <div className="mb-8 md:mb-0 text-center md:text-left">
-                   <div className="text-3xl font-black italic tracking-tighter mb-1 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-fuchsia-400 uppercase leading-none">PRIYANKA</div>
-                   <p className="text-slate-500 text-[8px] font-black uppercase tracking-[0.4em]">Consultants, Inc. — Excellence 2026</p>
-                </div>
-                <div className="flex flex-col items-center md:items-end gap-3 text-right">
-                   <div className="text-[9px] font-black uppercase tracking-widest text-indigo-500">Advisory Hotline</div>
-                   <a href="tel:7329983418" className="text-2xl font-black hover:text-cyan-400 transition-all italic tracking-tight">732.998.3418</a>
-                </div>
+            <motion.footer
+              className="py-20 bg-slate-950 text-white px-6 relative overflow-hidden"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={VIEWPORT}
+              transition={tr(0.6)}
+            >
+              {!reduceMotion && (
+                <motion.div
+                  className="pointer-events-none absolute bottom-0 left-1/2 h-40 w-[80%] -translate-x-1/2 bg-gradient-to-t from-indigo-600/20 to-transparent blur-2xl"
+                  animate={{ opacity: [0.3, 0.55, 0.3] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              )}
+              <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center opacity-90 relative z-10">
+                <motion.div
+                  className="mb-8 md:mb-0 text-center md:text-left"
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={VIEWPORT}
+                  transition={tr(0.45)}
+                >
+                  <div className="text-3xl font-black italic tracking-tighter mb-1 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-fuchsia-400 uppercase leading-none">PRIYANKA</div>
+                  <p className="text-slate-500 text-[8px] font-black uppercase tracking-[0.4em]">Consultants, Inc. — Excellence 2026</p>
+                </motion.div>
+                <motion.div
+                  className="flex flex-col items-center md:items-end gap-3 text-right"
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={VIEWPORT}
+                  transition={tr(0.45, 0.08)}
+                >
+                  <div className="text-[9px] font-black uppercase tracking-widest text-indigo-500">Advisory Hotline</div>
+                  <motion.a
+                    href="tel:7329983418"
+                    whileHover={reduceMotion ? {} : { scale: 1.03 }}
+                    className="text-2xl font-black hover:text-cyan-400 transition-colors italic tracking-tight"
+                  >
+                    732.998.3418
+                  </motion.a>
+                </motion.div>
               </div>
-            </footer>
+            </motion.footer>
           </motion.div>
         )}
       </AnimatePresence>
