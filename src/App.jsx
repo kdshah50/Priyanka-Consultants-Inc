@@ -350,6 +350,15 @@ const App = () => {
     ]
   };
 
+  const getCourseById = (id) => {
+    for (const list of Object.values(academyData)) {
+      const c = list.find((x) => x.id === id);
+      if (c) return c;
+    }
+    return null;
+  };
+  const featuredSpotlightCourses = ['leading-safe', 'azure-devops'].map(getCourseById).filter(Boolean);
+
   const CoursePage = ({ course, onBack, scrollToEnroll }) => {
     const enrollRef = useRef(null);
     const [enroll, setEnroll] = useState({ name: '', email: '', phone: '', company: '' });
@@ -1074,10 +1083,43 @@ const App = () => {
                   transition={tr(0.5)}
                 >
                   <h2 className="text-4xl font-black tracking-tight mb-4 text-center uppercase italic">Academy <span className="text-indigo-600 text-3xl">Catalog</span></h2>
-                  <p className="text-center text-slate-500 text-sm font-medium max-w-2xl mx-auto mb-10">
+                  <p className="text-center text-slate-500 text-sm font-medium max-w-2xl mx-auto mb-8">
                     Pick a course, review objectives, then <strong className="text-slate-700">enroll</strong>. Courses marked <strong className="text-indigo-600">Stripe · Pay online</strong> continue to Stripe’s hosted checkout after you submit the form (card, Apple Pay, Google Pay where available). Otherwise we confirm by phone or email.
                   </p>
                 </motion.div>
+
+                <div className="mb-12 grid gap-4 md:grid-cols-2 max-w-4xl mx-auto">
+                  {featuredSpotlightCourses.map((fc) => (
+                    <div
+                      key={fc.id}
+                      className="rounded-2xl border-2 border-indigo-200 bg-white p-6 shadow-md flex flex-col gap-3"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">Featured</span>
+                        <span className="text-[9px] font-bold text-slate-400">{fc.duration}</span>
+                        <span className="text-lg font-black text-indigo-600">{fc.price}</span>
+                      </div>
+                      <h3 className="text-lg font-black text-slate-900 italic leading-tight">{fc.name}</h3>
+                      <p className="text-xs text-slate-600 font-medium">{fc.detail}</p>
+                      <div className="flex flex-wrap gap-2 mt-auto pt-2">
+                        <button
+                          type="button"
+                          onClick={() => { setEnrollFromListing(false); setSelectedCourse(fc); }}
+                          className="inline-flex items-center justify-center rounded-full border-2 border-slate-200 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:border-indigo-500 hover:text-indigo-600"
+                        >
+                          Course details
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setEnrollFromListing(true); setSelectedCourse(fc); }}
+                          className="register-class inline-flex items-center justify-center rounded-full bg-indigo-600 text-white px-5 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-sm"
+                        >
+                          Enroll
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
                 <motion.div
                   initial={{ opacity: 0, y: reduceMotion ? 0 : 16 }}
@@ -1120,20 +1162,26 @@ const App = () => {
 
                 <div id="catalog-grid" className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {Object.entries({ 
-                    "SAFe® 6.0": academyData.safe, 
+                    "SAFe® — Leading SAFe® 6.0 & more": academyData.safe, 
                     "AI Engineering": academyData.ai, 
-                    "Cloud Infra": academyData.cloud, 
+                    "Cloud & Azure DevOps": academyData.cloud, 
                     "Agile Mastery": academyData.mastery 
                   }).map(([name, courses], idx) => (
                     <motion.div
                       key={`cat-${idx}`}
-                      initial={{ opacity: 0, y: reduceMotion ? 0 : 28 }}
+                      initial={{ opacity: 1, y: reduceMotion ? 0 : 12 }}
                       whileInView={{ opacity: 1, y: 0 }}
-                      viewport={VIEWPORT}
-                      transition={tr(0.45, idx * 0.08)}
+                      viewport={{ once: true, amount: 0.05, margin: '0px 0px -80px 0px' }}
+                      transition={tr(0.4, idx * 0.05)}
                       className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-200 shadow-sm"
                     >
-                      <h3 className="text-lg font-black mb-6 text-slate-900 uppercase italic tracking-tight border-b border-slate-200 pb-2">{name}</h3>
+                      <h3 className={`text-lg font-black text-slate-900 uppercase italic tracking-tight border-b border-slate-200 pb-2 leading-snug ${name.startsWith('SAFe') || name.startsWith('Cloud') ? 'mb-2' : 'mb-6'}`}>{name}</h3>
+                      {name.startsWith('SAFe') && (
+                        <p className="text-[10px] font-semibold text-slate-500 mb-4 leading-relaxed">Includes Leading SAFe® 6.0, PO/PM, RTE, LPM, Scrum Master, SAFe® DevOps</p>
+                      )}
+                      {name.startsWith('Cloud') && (
+                        <p className="text-[10px] font-semibold text-slate-500 mb-4 leading-relaxed">Includes Cloud Migration, FinOps, and Azure DevOps</p>
+                      )}
                       <ul className="space-y-4">
                         {courses.map((c) => (
                           <motion.li
